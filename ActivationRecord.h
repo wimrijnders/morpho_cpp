@@ -1,5 +1,6 @@
 #ifndef ACTIVATIONRECORD_H
 #define ACTIVATIONRECORD_H
+#include <string>
 #include "AnyObject.h"
 #include "Environment.h"
 
@@ -9,7 +10,7 @@
  */
 class ActivationRecord: public AnyObject {
 private:
-	int m_return_address;
+	int m_return_address{-1};
 
 	// activation record to use when returning from the current function
 	ActivationRecord *m_control_link{nullptr};
@@ -20,15 +21,13 @@ private:
 	// Not clear yet how this should work
 	AnyObject *m_exception_continuation{nullptr};
 
-	string m_function_name;
-	string m_file_name;
-	int    m_line_number;
+	std::string m_function_name;
+	std::string m_file_name;
+	int    m_line_number{-1};
 
 public:
 	ActivationRecord() {
 		// Default implicitly deleted, but defaults should be OK for now
-		
-		assert(false); //TODO: Check this
 	}
 
 	~ActivationRecord() {

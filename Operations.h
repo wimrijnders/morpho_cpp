@@ -3,6 +3,7 @@
 #include "Instruction.h"
 #include "Interpreter.h"
 
+namespace operation {
 
 class StoreArgVal: public Instruction {
 private:
@@ -111,7 +112,7 @@ public:
 			m_func(interpreter);
 		} else {
 			assert(m_position != -1);
-			interpreter.jump_absolute(m_pos);
+			interpreter.jump_absolute(m_position);
 		}	
 	}
 };
@@ -185,6 +186,8 @@ public:
 	}
 };
 
+
+} // namespace operation
 
 
 template<typename T>

@@ -48,10 +48,18 @@ public:
 	// Storing value in non-existent location creates it
 	void set(int index, AnyObject *obj) {
 		if (index < 0) {
-			index = -index;
+			index = -index; // NOTE: index 0 not used because temp indexes <= -1
+
+			if (m_temp_variables.size() <= (unsigned) index) {
+				m_temp_variables.resize(index + 1);
+			}
 
 			m_temp_variables[index] = obj;
 		} else {
+			if (m_local_variables.size() <= (unsigned) index) {
+				m_local_variables.resize(index + 1);
+			}
+
 			m_local_variables[index] = obj;
 		}
 	}

@@ -12,7 +12,11 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include "Runnable.h"
+#include "Operations.h"
+#include "library_functions.h"
 
+using namespace operation;
 using std::vector;
 using std::string;
 
@@ -37,104 +41,6 @@ void pop(std::vector<V> & v) {
 	v.erase(v.begin());
 }
 
-//////////////////////////
-// Morpho transcription 
-//////////////////////////
-
-class Runnable {
-public:
-	enum /* class */ State {
-		INITIALIZING,
-		READY,
-		RUNNING,
-		YIELDED,
-		PAUSED,			// Yield after executing a fair number of instructions
-		DONE
-	};
-
-private:
-
-	virtual void run_intern() = 0;
-
-protected:
-	State m_state{INITIALIZING};
-
-	void set_done() { m_state = DONE; }
-
-public:
-	State state() { return m_state; }
-	bool can_run() { return m_state == READY || m_state == PAUSED; }
-	bool done() { return m_state == DONE; }
-
-	void run() {
-		assert(m_state == READY || m_state == PAUSED);
-
-		m_state = RUNNING;
-
-		run_intern();
-
-		// Post: set state to either YIELDED, PAUSED or DONE
-		m_state = DONE; // YIELDED, PAUSED
-	}
-};
-
-
-template<typename RunnableItem>
-class RunnableList {
-private:
-	std::vector<RunnableItem> m_ready;
-	std::vector<RunnableItem> m_running;
-
-	void remove_done() {
-		// Clean up
-		auto i = std::begin(m_running);
-
-		while (i != std::end(m_running)) {
-	    // do some stuff
-	    if (i->done())
-	        i = m_running.erase(i);
-	    else
-	        ++i;
-		}
-	}
-
-
-	virtual bool execute_intern(RunnableItem &runnable) = 0;
-
-protected:
-
-	void execute() {
-		for(auto &runnable: m_running) {
-			if (!runnable.can_run()) continue;
-
-			if(!execute_intern(runnable)) break;
-		}
-
-		remove_done();
-	}
-
-
-	void loop() {
-		// Initialize worker threads here
-
-		while(true) {
-			while (!m_ready.empty()) {
-				m_running.push_back(m_ready[0]);
-				pop(m_ready);
-			}
-
-			execute();
-
-			if (m_ready.empty() && m_running.empty()) {
-				break;
-			}
-		}
-	}
-};
-
-
-#include "Operations.h"
-#include "library_functions.h"
 
 
 /**
@@ -147,9 +53,15 @@ protected:
  * Filling it in as we go along.
  */
 Instruction *data[] = {
+  /**
+   * NOTE: for all jumps and calls, the value to jump to is 'one before',
+   *       because program counter is always incremented.
+   *       For libraries, the program counter is not used, so then this offset doesn't occur.
+   */
+
 // Entry point: fib(3)
 	new StoreArgVal(-1, 0, 3),
-	new Call(2, -2),										// Jump only within current instruction array
+	new Call(2, -1),										// Jump only within current instruction array
 	new Return(),
 
 // Start of function fib(n)
@@ -157,7 +69,7 @@ Instruction *data[] = {
 	new StoreArgVal(-1, 1, 2),
 	new Call(smaller_equal_two, -1),		// Cheating here; not intending to
 																			// implement lib functions in morpho assembly
-	new GoFalse(3),	// Jump three instructions forward.
+	new GoFalse(2),	                    // Jump three(!) instructions forward.
 	new MakeVal(1),
 	new Return(),
 
@@ -165,13 +77,13 @@ Instruction *data[] = {
 	new StoreArgVal(-3, 1, 1),
 	new Call(subtract, -3),							// Cheating again
 	new StoreArgAcc(-2, 0),
-	new Call(3, -2),										// Jump only within current instruction array
+	new Call(2, -2),										// Jump only within current instruction array
 	new StoreArgAcc(-1, 0),
 	new StoreArgVar(-3, 0, 0),
 	new StoreArgVal(-3, 1, 2),
 	new Call(subtract, -3),							// Cheating again
 	new StoreArgAcc(-2, 0),
-	new Call(3, -2),										// Jump only within current instruction array
+	new Call(2, -2),										// Jump only within current instruction array
 	new StoreArgAcc(-1, 1),
 	new Become(add, -1),							  // Cheating again
 	nullptr
@@ -196,12 +108,23 @@ private:
 	}
 
 	void run_intern() override {
-		// TODO!
+
+		loop();
 
 		// On return function:
 		if (!return_function()) {
 			set_done();
 		}
+	}
+
+public:
+	Fiber(InstructionArray *program) :
+		Interpreter(program)
+	{
+		assert(program != nullptr);
+		assert(program->size() > 0);
+
+		m_state = READY;
 	}
 };
 
@@ -220,6 +143,13 @@ private:
 		loop();
 		set_done();
 	}
+public:
+	void add(const Fiber &item) {
+		RunnableList<Fiber>::add(item);
+
+		m_state = READY;
+	}
+
 };
 
 
@@ -230,20 +160,6 @@ private:
 	std::atomic<bool> m_running{false};
 
 public:
-/*
-	// grumbl deleted functions
-	Thread() = default;
-	Thread(const Thread &thr) {
-		m_thread = thr.m_thread;
-		m_running = thr.m_running;
-	}
-	Thread operator=(const Thread &thr) {
-		m_thread = thr.m_thread;
-		m_running = thr.m_running;
-
-		return *this;
-	}
-*/
 	bool available() { return m_running == false; }
 
 	void execute(Process &process) {
@@ -268,10 +184,6 @@ private:
 
 public:
 	ThreadPool() : std::vector<Thread>(NUM_WORKER_THREADS)  {
-//		for (int i = 0; i < NUM_WORKER_THREADS; ++i) {
-//			Thread tmp;
-//			push_back(tmp);
-//		}
 	}
 
 	/**
@@ -323,6 +235,17 @@ private:
 	}
 
 public:
+	void add_code(InstructionArray *code) {
+		Fiber fiber(code);
+		Process process;
+		process.add(fiber);
+		add(process);
+
+		// Remove ptr's after copy ctor call in process
+		process.clear();
+		fiber.clear();
+	}
+
 	void start() {
 		// Initialize worker threads here
 
@@ -341,6 +264,7 @@ int main(int argc, char *argv[]) {
 	VM vm;
 
 	// load program here
+	vm.add_code(&example);
 
 	vm.start();
 

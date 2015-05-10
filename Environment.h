@@ -13,8 +13,6 @@ private:
 public:
 	Environment() {
 		// Default implicitly deleted, but defaults should be OK for now
-		
-		assert(false); //TODO: Check this
 	}
 
 	AnyObject *get(int index) {

@@ -9,9 +9,9 @@ private:
 	//registers
 	std::unique_ptr<AnyObject> m_accumulator;
 
-	ActivationRecord *m_activation_record;
+	ActivationRecord *m_activation_record{nullptr};
 	InstructionArray *m_program{nullptr};	// Many arrays present?
-	int m_program_counter;
+	int m_program_counter{-1};
 
   friend void swap(Interpreter &first, Interpreter &second) /* nothrow */ {
     // enable ADL (not necessary in our case, but good practice)
@@ -29,7 +29,6 @@ private:
   }
 
 protected:
-
 	/**
 	 * @return true if can run next activation record,
    *         false if no more activation to run.
@@ -52,16 +51,31 @@ protected:
 	}
 
 public:
+	Interpreter(InstructionArray *program) {
+		m_program = program;
+		m_activation_record = new ActivationRecord();
+		m_program_counter = 0;
+	}
+
 	~Interpreter() {
 		assert(m_activation_record == nullptr);	 // Would really prefer for this to be the case
 		delete m_activation_record;
+
+		// Note that m_program is not deleted. At time of writing, this is handled extern.
 	}
 
 
 	// Not sure about copying the m_activation_record here.
 	// But this is needed for correct compilation
 	Interpreter(const Interpreter &rhs) {
-		assert(false); // Really, should never be called
+		// Only allow this if not assigned yet.
+		assert(m_activation_record == nullptr);
+		assert(m_accumulator.get() == nullptr);
+		assert(m_program == nullptr);
+		// assignment to acc intentionally skipped here
+		m_activation_record = rhs.m_activation_record;
+		m_program = rhs.m_program;
+		m_program_counter = rhs.m_program_counter;
 	}
 
 	Interpreter(Interpreter &&rhs) /* : Interpreter() */ {
@@ -71,6 +85,11 @@ public:
 	Interpreter &operator=(Interpreter &&rhs) {
   	swap(*this, rhs);
     return *this;
+	}
+
+	void clear() {
+		m_activation_record = nullptr;
+		m_program = nullptr;
 	}
 
 	AnyObject *get_acc() {
@@ -197,7 +216,16 @@ public:
 		
 
 		while(true) {
-			(*m_program)[m_program_counter++]->execute(*this);
+			(*m_program)[m_program_counter]->execute(*this);
+			m_program_counter++;
+
+
+			// If we reached end of code, stop
+			if ((*m_program)[m_program_counter] == nullptr) {
+				break;
+			}
+
+			// TODO: The other condition is a top-level return.
 		}
 	}
 };

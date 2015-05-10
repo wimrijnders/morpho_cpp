@@ -17,7 +17,7 @@ void smaller_equal_two(Interpreter &interpreter) {
 	interpreter.set_acc(new BoolObject(int1->val() <= int2->val()));
 
 	// Return from function
-	Return ret;
+	operation::Return ret;
 	ret.execute(interpreter);
 }
 
@@ -33,9 +33,10 @@ void subtract(Interpreter &interpreter) {
 	interpreter.set_acc(new IntObject(int1->val() - int2->val()));
 
 	// Return from function
-	Return ret;
+	operation::Return ret;
 	ret.execute(interpreter);
 }
+
 
 // Int's only for now.
 void add(Interpreter &interpreter) {
@@ -48,7 +49,7 @@ void add(Interpreter &interpreter) {
 	interpreter.set_acc(new IntObject(int1->val() + int2->val()));
 
 	// Return from function
-	Return ret;
+	operation::Return ret;
 	ret.execute(interpreter);
 }
 
