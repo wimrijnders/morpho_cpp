@@ -32,11 +32,11 @@ public:
 		if (index < 0) {
 			index = -index;
 
-			if (index < m_temp_variables.size()) {
+			if ((unsigned) index < m_temp_variables.size()) {
 				return m_temp_variables[index];
 			}	
 		} else {
-			if (index < m_local_variables.size()) {
+			if ((unsigned) index < m_local_variables.size()) {
 				return m_local_variables[index];
 			}	
 		}

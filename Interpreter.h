@@ -48,6 +48,7 @@ protected:
 
 		// Perhaps TODO: set new instruction array.
 		// Perhaps there is a single large array, so that setting is not necessary.
+		return true;
 	}
 
 public:
@@ -69,6 +70,11 @@ public:
 
 	Interpreter &operator=(Interpreter &&rhs) {
   	swap(*this, rhs);
+    return *this;
+	}
+
+	AnyObject *get_acc() {
+		return m_accumulator.get();
 	}
 
 	void set_acc(AnyObject *obj) {
@@ -113,8 +119,14 @@ public:
 		return m_activation_record;
 	}
 
-	void push_ar(int index) {
-		// NOTE: program counter not set yet!!!!
+
+	//
+	// 'Become' is a construct to enable tail recursion.
+	// I don't understand fully how it works, but I hope to get there by working with it.
+	// 'Become' is enabled by the second parameter.
+	//
+	void push_ar(int index, bool become = false) {
+		// NOTE: program counter not set here!!!!!
 
 		AnyObject *obj = m_activation_record->get(index);
 		assert(obj != nullptr);
@@ -122,7 +134,12 @@ public:
 		ActivationRecord	*ar = dynamic_cast<ActivationRecord *>(obj);
 		assert(ar != nullptr);
 		m_activation_record->set(index, nullptr);
-		ar->activate(m_program_counter + 1, m_activation_record);
+
+		if (become) {
+			ar->activate(m_activation_record->return_address(), m_activation_record);
+		} else {
+			ar->activate(m_program_counter + 1, m_activation_record);
+		}
 
 		m_activation_record = ar;
 	}
@@ -153,6 +170,23 @@ public:
 		}
 
 		return ptr;
+	}
+
+
+	void jump_relative(int target) {
+		int new_pc = m_program_counter + target;
+
+		assert(new_pc >= 0 && (unsigned) new_pc < m_program->size());
+
+		m_program_counter = new_pc;
+	}
+
+	void jump_absolute(int target) {
+		int new_pc = target;
+
+		assert(new_pc >= 0 && (unsigned) new_pc < m_program->size());
+
+		m_program_counter = new_pc;
 	}
 
 	/**

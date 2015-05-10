@@ -16,7 +16,7 @@
 using std::vector;
 using std::string;
 
-#define USE_THREADS
+const int NUM_WORKER_THREADS = 0;
 
 //////////////////////////
 // Support methods
@@ -133,118 +133,8 @@ protected:
 };
 
 
-
-#include "Interpreter.h"
-
-
-class ActivationRecord;
-
-class StoreArgVal: public Instruction {
-private:
-	int m_val{0};
-	int m_pos2{0};
-
-public:
-	StoreArgVal(int ar, int pos, int val) :
-		Instruction(ar, pos),
-		m_val(val)
-	{}
-
-
-	void execute(Interpreter &interpreter) override {
-		ActivationRecord *ar = interpreter.set_ar(m_ar);
-		ar->set(m_pos, new IntObject(m_val));
-	}
-};
-
-class StoreArgVar: public Instruction {
-private:
-	int m_lev2{0};
-	int m_pos2{0};
-
-public:
-	StoreArgVar(int ar, int pos, int lev2, int pos2) :
-		Instruction(ar, pos),
-		m_lev2(lev2),
-		m_pos2(pos2)
-	{}
-
-
-	/**
-	 * Assume level 0 if not specified
-	 */
-	StoreArgVar(int ar, int pos, int pos2) :
-		StoreArgVar(ar, pos, 0, pos2) 
-	{}
-
-	void execute(Interpreter &interpreter) override {
-		ActivationRecord *from_ar = interpreter.control_link(m_lev2);
-		AnyObject *from_var = from_ar->get(m_pos2);
-		assert(from_var != nullptr);
-
-		ActivationRecord *ar = interpreter.set_ar(m_ar);
-		ar->set(m_pos, from_var->clone());
-	}
-};
-
-class Return: public Instruction {
-private:
-	int m_lev{0};
-
-public:
-	// For the time being, only control level 0
-	Return() :
-		Instruction(0,0),
-		m_lev(0)
-	{}
-
-	void execute(Interpreter &interpreter) override {
-		interpreter.pop_ar(m_lev);
-	}
-};
-
-using lib_func = void (Interpreter &);
-
-class Call: public Instruction {
-	lib_func *m_func{nullptr};
-
-public:
-	Call(lib_func &func, int ar) : 
-		Instruction(ar, 0),
-		m_func(func)
-	{
-	}
-
-	void execute(Interpreter &interpreter) override {
-		interpreter.push_ar(m_ar);
-
-		m_func(interpreter);
-	}
-};
-
-/**
- * Library definitions.
- *
- * These are called directly, not bothering with the morpho assembly code syntax here
- */
-
-// Int's only for now.
-void smaller_equal_two(Interpreter &interpreter) {
-	AnyObject *var1 = interpreter.cur_ar()->get(0);
-	assert(var1 != nullptr);
-	IntObject *int1 = dynamic_cast<IntObject *>(var1);
-
-	AnyObject *var2 = interpreter.cur_ar()->get(1);
-	assert(var2 != nullptr);
-	IntObject *int2 = dynamic_cast<IntObject *>(var2);
-
-	// return value in accumulator
-	interpreter.set_acc(new BoolObject(int1->val() <= int2->val()));
-
-	// Return from function
-	Return ret;
-	ret.execute(interpreter);
-}
+#include "Operations.h"
+#include "library_functions.h"
 
 
 /**
@@ -257,10 +147,33 @@ void smaller_equal_two(Interpreter &interpreter) {
  * Filling it in as we go along.
  */
 Instruction *data[] = {
+// Entry point: fib(3)
+	new StoreArgVal(-1, 0, 3),
+	new Call(2, -2),										// Jump only within current instruction array
+	new Return(),
+
+// Start of function fib(n)
 	new StoreArgVar(-1, 0, 0),
 	new StoreArgVal(-1, 1, 2),
 	new Call(smaller_equal_two, -1),		// Cheating here; not intending to
 																			// implement lib functions in morpho assembly
+	new GoFalse(3),	// Jump three instructions forward.
+	new MakeVal(1),
+	new Return(),
+
+	new StoreArgVar(-3, 0, 0),
+	new StoreArgVal(-3, 1, 1),
+	new Call(subtract, -3),							// Cheating again
+	new StoreArgAcc(-2, 0),
+	new Call(3, -2),										// Jump only within current instruction array
+	new StoreArgAcc(-1, 0),
+	new StoreArgVar(-3, 0, 0),
+	new StoreArgVal(-3, 1, 2),
+	new Call(subtract, -3),							// Cheating again
+	new StoreArgAcc(-2, 0),
+	new Call(3, -2),										// Jump only within current instruction array
+	new StoreArgAcc(-1, 1),
+	new Become(add, -1),							  // Cheating again
 	nullptr
 };
 
@@ -300,6 +213,7 @@ private:
 
 	virtual bool execute_intern(Fiber &fiber) override {
 		fiber.run();
+		return true;
 	}
 
 	void run_intern() override {
@@ -316,6 +230,20 @@ private:
 	std::atomic<bool> m_running{false};
 
 public:
+/*
+	// grumbl deleted functions
+	Thread() = default;
+	Thread(const Thread &thr) {
+		m_thread = thr.m_thread;
+		m_running = thr.m_running;
+	}
+	Thread operator=(const Thread &thr) {
+		m_thread = thr.m_thread;
+		m_running = thr.m_running;
+
+		return *this;
+	}
+*/
 	bool available() { return m_running == false; }
 
 	void execute(Process &process) {
@@ -339,6 +267,12 @@ class ThreadPool: public std::vector<Thread> {
 private:
 
 public:
+	ThreadPool() : std::vector<Thread>(NUM_WORKER_THREADS)  {
+//		for (int i = 0; i < NUM_WORKER_THREADS; ++i) {
+//			Thread tmp;
+//			push_back(tmp);
+//		}
+	}
 
 	/**
 	 * @brief Return an available thread, if present
@@ -375,15 +309,16 @@ private:
 	ThreadPool           m_thread_pool;
 
 	bool execute_intern(Process &process) override { 
-#ifdef USE_THREADS
-		Thread *thr = m_thread_pool.get_available();
-		if (thr == nullptr) return false;;
+		if (NUM_WORKER_THREADS > 0) {
+			Thread *thr = m_thread_pool.get_available();
+			if (thr == nullptr) return false;;
 
-		// Run Processin context of thread
-		thr->execute(process);
-#else
-		process.run();
-#endif
+			// Run Processin context of thread
+			thr->execute(process);
+		} else {
+			process.run();
+		}
+
 		return true;
 	}
 
@@ -408,4 +343,6 @@ int main(int argc, char *argv[]) {
 	// load program here
 
 	vm.start();
+
+	return 0;
 }

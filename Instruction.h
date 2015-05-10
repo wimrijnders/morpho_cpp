@@ -15,6 +15,7 @@ public:
 			m_pos(pos) 
 		{}
 
+	virtual ~Instruction() {}
 	virtual void execute(Interpreter &interpreter) = 0;
 };
 
@@ -34,7 +35,7 @@ public:
 	~InstructionArray() {
 		for (auto &ptr: *this) {
 			delete ptr;
-			ptr = nullptr;
+			ptr = nullptr;		// Paranoia
 		}
 	}
 };
