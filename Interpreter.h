@@ -1,14 +1,15 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
+#include <memory>
 #include "ActivationRecord.h"
 #include "Instruction.h"
 
 class Interpreter {
 private:
 	//registers
-	AnyObject *m_accumulator{nullptr};
+	std::unique_ptr<AnyObject> m_accumulator;
 
-	ActivationRecord *m_activation_record{nullptr};
+	ActivationRecord *m_activation_record;
 	InstructionArray *m_program{nullptr};	// Many arrays present?
 	int m_program_counter;
 
@@ -17,7 +18,7 @@ private:
     using std::swap; 
 
 		assert(first.m_activation_record == nullptr);
-		assert(first.m_program== nullptr);
+		assert(first.m_program == nullptr);
 
     // by swapping the members of two classes,
     // the two classes are effectively swapped
@@ -51,13 +52,16 @@ protected:
 
 public:
 	~Interpreter() {
+		assert(m_activation_record == nullptr);	 // Would really prefer for this to be the case
 		delete m_activation_record;
 	}
 
 
 	// Not sure about copying the m_activation_record here.
 	// But this is needed for correct compilation
-	Interpreter(const Interpreter &rhs) = default;
+	Interpreter(const Interpreter &rhs) {
+		assert(false); // Really, should never be called
+	}
 
 	Interpreter(Interpreter &&rhs) /* : Interpreter() */ {
   	swap(*this, rhs);
@@ -65,6 +69,10 @@ public:
 
 	Interpreter &operator=(Interpreter &&rhs) {
   	swap(*this, rhs);
+	}
+
+	void set_acc(AnyObject *obj) {
+		m_accumulator.reset(obj);
 	}
 
 
@@ -100,6 +108,37 @@ public:
 		return out_ar;
 	}
 
+	ActivationRecord *cur_ar() {
+		assert(m_activation_record != nullptr);
+		return m_activation_record;
+	}
+
+	void push_ar(int index) {
+		// NOTE: program counter not set yet!!!!
+
+		AnyObject *obj = m_activation_record->get(index);
+		assert(obj != nullptr);
+
+		ActivationRecord	*ar = dynamic_cast<ActivationRecord *>(obj);
+		assert(ar != nullptr);
+		m_activation_record->set(index, nullptr);
+		ar->activate(m_program_counter + 1, m_activation_record);
+
+		m_activation_record = ar;
+	}
+
+
+	void pop_ar(int level) {
+		assert(level == 0);		// Deeper levels not handled yet
+
+		ActivationRecord *ar = control_link(level);
+		assert(ar == m_activation_record);
+
+		ActivationRecord *tmp;
+		m_activation_record->deactivate(m_program_counter, tmp);
+		delete m_activation_record;
+		m_activation_record = tmp;
+	}
 
 	ActivationRecord *control_link(int level) {
 		assert(m_activation_record != nullptr);

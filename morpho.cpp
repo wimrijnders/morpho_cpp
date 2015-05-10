@@ -134,132 +134,137 @@ protected:
 
 
 
+#include "Interpreter.h"
 
-class Interpreter;
 
-class Instruction {
+class ActivationRecord;
+
+class StoreArgVal: public Instruction {
+private:
+	int m_val{0};
+	int m_pos2{0};
+
 public:
-	void execute(Interpreter &interpreter) {
+	StoreArgVal(int ar, int pos, int val) :
+		Instruction(ar, pos),
+		m_val(val)
+	{}
+
+
+	void execute(Interpreter &interpreter) override {
+		ActivationRecord *ar = interpreter.set_ar(m_ar);
+		ar->set(m_pos, new IntObject(m_val));
 	}
 };
 
-
-class InstructionArray : public std::vector<Instruction> {
-};
-
-
-/**
- * Proxy for later handling.
- */
-class AnyObject {
-};
-
-class Environment {
-public:
-	// Convention in VM: temp have negative indexes, local >= 0
-	vector<AnyObject> m_temp_variables;
-	vector<AnyObject> m_local_variables;
-
-	// Environment are chained, from direct enclosing to top-level global.
-	Environment &m_enclosing_environment;
-};
-
-
-/**
- * Currently, instances form linked lists.
- */
-class ActivationRecord {
+class StoreArgVar: public Instruction {
 private:
-	int m_return_address;
-
-	// activation record to use when returning from the current function
-	ActivationRecord *m_control_link{nullptr};
-
-	Environment m_environment;
+	int m_lev2{0};
+	int m_pos2{0};
 
 public:
-	~ActivationRecord() {
-		delete m_control_link;
-	}
+	StoreArgVar(int ar, int pos, int lev2, int pos2) :
+		Instruction(ar, pos),
+		m_lev2(lev2),
+		m_pos2(pos2)
+	{}
 
-	int return_address() { return m_return_address; }
-	ActivationRecord *control_link() { return m_control_link; }
-};
-
-
-class Interpreter {
-private:
-	//registers
-	AnyObject m_accumulator;
-	ActivationRecord *m_activation_record{nullptr};
-	InstructionArray *m_program{nullptr};	// Many arrays present?
-	int m_program_counter;
-
-  friend void swap(Interpreter &first, Interpreter &second) /* nothrow */ {
-    // enable ADL (not necessary in our case, but good practice)
-    using std::swap; 
-
-		assert(first.m_activation_record == nullptr);
-		assert(first.m_program== nullptr);
-
-    // by swapping the members of two classes,
-    // the two classes are effectively swapped
-    swap(first.m_accumulator, second.m_accumulator); 
-    swap(first.m_activation_record, second.m_activation_record); 
-    swap(first.m_program, second.m_program); 
-    swap(first.m_program_counter, second.m_program_counter); 
-  }
-
-protected:
 
 	/**
-	 * @return true if can run next activation record,
-   *         false if no more activation to run.
+	 * Assume level 0 if not specified
 	 */
-	bool return_function() {
-		if (m_activation_record == nullptr) {
-			return false;
-		}
+	StoreArgVar(int ar, int pos, int pos2) :
+		StoreArgVar(ar, pos, 0, pos2) 
+	{}
 
-		auto *tmp = m_activation_record;
+	void execute(Interpreter &interpreter) override {
+		ActivationRecord *from_ar = interpreter.control_link(m_lev2);
+		AnyObject *from_var = from_ar->get(m_pos2);
+		assert(from_var != nullptr);
 
-		m_program_counter = tmp->return_address();
-
-		m_activation_record = tmp->control_link();
-		delete tmp;
-
-		// Perhaps TODO: set new instruction array.
-		// Perhaps there is a single large array, so that setting is not necessary.
-	}
-
-public:
-	~Interpreter() {
-		delete m_activation_record;
-	}
-
-
-	// Not sure about copying the m_activation_record here.
-	// But this is needed for correct compilation
-	Interpreter(const Interpreter &rhs) = default;
-
-	Interpreter(Interpreter &&rhs) /* : Interpreter() */ {
-  	swap(*this, rhs);
-	}
-
-	Interpreter &operator=(Interpreter &&rhs) {
-  	swap(*this, rhs);
-	}
-
-
-	void loop() {
-		assert(m_program != nullptr);
-		
-
-		while(true) {
-			(*m_program)[m_program_counter++].execute(*this);
-		}
+		ActivationRecord *ar = interpreter.set_ar(m_ar);
+		ar->set(m_pos, from_var->clone());
 	}
 };
+
+class Return: public Instruction {
+private:
+	int m_lev{0};
+
+public:
+	// For the time being, only control level 0
+	Return() :
+		Instruction(0,0),
+		m_lev(0)
+	{}
+
+	void execute(Interpreter &interpreter) override {
+		interpreter.pop_ar(m_lev);
+	}
+};
+
+using lib_func = void (Interpreter &);
+
+class Call: public Instruction {
+	lib_func *m_func{nullptr};
+
+public:
+	Call(lib_func &func, int ar) : 
+		Instruction(ar, 0),
+		m_func(func)
+	{
+	}
+
+	void execute(Interpreter &interpreter) override {
+		interpreter.push_ar(m_ar);
+
+		m_func(interpreter);
+	}
+};
+
+/**
+ * Library definitions.
+ *
+ * These are called directly, not bothering with the morpho assembly code syntax here
+ */
+
+// Int's only for now.
+void smaller_equal_two(Interpreter &interpreter) {
+	AnyObject *var1 = interpreter.cur_ar()->get(0);
+	assert(var1 != nullptr);
+	IntObject *int1 = dynamic_cast<IntObject *>(var1);
+
+	AnyObject *var2 = interpreter.cur_ar()->get(1);
+	assert(var2 != nullptr);
+	IntObject *int2 = dynamic_cast<IntObject *>(var2);
+
+	// return value in accumulator
+	interpreter.set_acc(new BoolObject(int1->val() <= int2->val()));
+
+	// Return from function
+	Return ret;
+	ret.execute(interpreter);
+}
+
+
+/**
+ * Example program from chapter Example in second doc.
+ *
+ * Doing the assembly code only; we won't even bother with the actual language.
+ *
+ * The intention here is to implement the least possible functionality to make it
+ * work, so that the VM can be tested.
+ * Filling it in as we go along.
+ */
+Instruction *data[] = {
+	new StoreArgVar(-1, 0, 0),
+	new StoreArgVal(-1, 1, 2),
+	new Call(smaller_equal_two, -1),		// Cheating here; not intending to
+																			// implement lib functions in morpho assembly
+	nullptr
+};
+
+InstructionArray example(data);
 
 
 class Fiber: public Runnable, public Interpreter {

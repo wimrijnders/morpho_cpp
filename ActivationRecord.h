@@ -33,6 +33,21 @@ public:
 
 	~ActivationRecord() {
 		delete m_control_link;
+		assert(m_exception_continuation == nullptr);
+	}
+
+	void activate(int return_address, ActivationRecord *control_link) {
+		m_return_address = return_address;
+
+		assert(m_control_link == nullptr);
+		m_control_link = control_link;
+	}
+
+	// Return return address and control link by reference
+	void  deactivate(int &program_counter, ActivationRecord *&ar) {
+		program_counter = m_return_address;
+		ar = m_control_link;
+		m_control_link = nullptr;
 	}
 
 	AnyObject *clone() override {

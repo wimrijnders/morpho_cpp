@@ -5,7 +5,16 @@
 class Interpreter;
 
 class Instruction {
+protected:
+	int m_ar{0};
+	int m_pos{0};
+
 public:
+		Instruction(int ar, int pos) :
+			m_ar(ar),
+			m_pos(pos) 
+		{}
+
 	virtual void execute(Interpreter &interpreter) = 0;
 };
 
