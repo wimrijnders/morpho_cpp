@@ -3,7 +3,117 @@
 #include "Instruction.h"
 #include "Interpreter.h"
 
+//
+// Peform a checked cast from a variable in an
+// activation record to the type we want/expect.
+//
+template<typename T>
+T *get_convert(ActivationRecord *ar, int index) {
+	assert(ar != nullptr);
+
+	AnyObject *var = ar->get(index);
+	assert(var != nullptr);
+	T *ret = dynamic_cast<T *>(var);
+	assert(ret != nullptr);
+
+	return ret;
+}
+
+
+
 namespace operation {
+
+//////////////////////////////
+// Morpho2 operations
+//////////////////////////////
+
+using lib_func = void (Interpreter &);
+
+/**
+ * @brief Perform a call to either a built-in function or
+ *        a position in the current operations array.
+ *
+ */
+class Call: public Instruction {
+	lib_func *m_func{nullptr};
+	int m_position{-1};
+
+public:
+	/**
+	 * @brief Init with library function
+	 */
+	Call(lib_func &func, int ar) :
+		Instruction(ar, 0),
+		m_func(func)
+	{}
+
+
+	/**
+	 * @brief Init with index into the current instruction array
+	 *
+	 * The position is passed as a relative jump from the current
+	 * program counter.
+	 */
+	Call(int position, int ar) :
+		Instruction(ar, 0),
+		m_position(position)
+	{}
+
+	void execute(Interpreter &interpreter) override {
+		interpreter.call_init(m_ar);
+
+		if (m_func != nullptr) {
+			assert(m_position == -1);
+			m_func(interpreter);
+		} else {
+			assert(m_position != -1);
+			interpreter.jump_absolute(m_position);
+		}
+	}
+};
+
+
+class Return: public Instruction {
+private:
+	int m_lev{0};
+
+public:
+	// For the time being, only control level 0
+	Return() :
+		Instruction(0,0),
+		m_lev(0)
+	{}
+
+	void execute(Interpreter &interpreter) override {
+		interpreter.ret(m_lev);
+	}
+};
+
+
+class MakeVal: public Instruction {
+private:
+	int m_val;		// int only for now
+
+public:
+	MakeVal(int val) :
+		Instruction(0, 0),
+		m_val(val)
+	{
+	}
+
+	void execute(Interpreter &interpreter) override {
+		//TODO: test acc for false
+
+		interpreter.set_acc(new IntObject(m_val));
+	}
+};
+
+
+
+
+//////////////////////////////
+// Old operations
+//////////////////////////////
 
 class StoreArgVal: public Instruction {
 private:
@@ -65,55 +175,7 @@ public:
 
 	void execute(Interpreter &interpreter) override {
 		ActivationRecord *ar = interpreter.set_ar(m_ar);
-		ar->set(m_pos, interpreter.get_acc());
-	}
-};
-
-class Return: public Instruction {
-private:
-	int m_lev{0};
-
-public:
-	// For the time being, only control level 0
-	Return() :
-		Instruction(0,0),
-		m_lev(0)
-	{}
-
-	void execute(Interpreter &interpreter) override {
-		interpreter.pop_ar(m_lev);
-	}
-};
-
-using lib_func = void (Interpreter &);
-
-class Call: public Instruction {
-	lib_func *m_func{nullptr};
-	int m_position{-1};
-
-public:
-	// Init with library function
-	Call(lib_func &func, int ar) : 
-		Instruction(ar, 0),
-		m_func(func)
-	{}
-
-	// Init with index into the current instruction array
-	Call(int position, int ar) : 
-		Instruction(ar, 0),
-		m_position(position)
-	{}
-
-	void execute(Interpreter &interpreter) override {
-		interpreter.push_ar(m_ar);
-
-		if (m_func != nullptr) {
-			assert(m_position == -1);
-			m_func(interpreter);
-		} else {
-			assert(m_position != -1);
-			interpreter.jump_absolute(m_position);
-		}	
+		ar->set(m_pos, interpreter.get_acc()->clone());
 	}
 };
 
@@ -136,7 +198,7 @@ public:
 	{}
 
 	void execute(Interpreter &interpreter) override {
-		interpreter.push_ar(m_ar, true);	// Apparently the only difference with Call
+		interpreter.become(m_ar);
 
 		if (m_func != nullptr) {
 			assert(m_position == -1);
@@ -161,28 +223,15 @@ public:
 	}
 
 	void execute(Interpreter &interpreter) override {
-		//TODO: test acc for false
+		// Test acc for false
+		AnyObject *var = interpreter.get_acc();
+		assert(var != nullptr);
+		BoolObject *ret = dynamic_cast<BoolObject *>(var);
+		assert(ret != nullptr);
 
-		interpreter.jump_relative(m_target);
-	}
-};
-
-
-class MakeVal: public Instruction {
-private:
-	int m_val;		// int only for now
-
-public:
-	MakeVal(int val) : 
-		Instruction(0, 0),
-		m_val(val)
-	{
-	}
-
-	void execute(Interpreter &interpreter) override {
-		//TODO: test acc for false
-
-		interpreter.set_acc(new IntObject(m_val));
+		if (ret->val() == false) {
+			interpreter.jump_relative(m_target);
+		}
 	}
 };
 
@@ -190,16 +239,5 @@ public:
 } // namespace operation
 
 
-template<typename T>
-T *get_convert(ActivationRecord *ar, int index) {
-	assert(ar != nullptr);
-
-	AnyObject *var = ar->get(index);
-	assert(var != nullptr);
-	T *ret = dynamic_cast<T *>(var);
-	assert(ret != nullptr);
-
-	return ret;
-}
 
 #endif // OPERATIONS_H

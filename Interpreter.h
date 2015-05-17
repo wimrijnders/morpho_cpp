@@ -138,31 +138,67 @@ public:
 		return m_activation_record;
 	}
 
+private:
 
-	//
-	// 'Become' is a construct to enable tail recursion.
-	// I don't understand fully how it works, but I hope to get there by working with it.
-	// 'Become' is enabled by the second parameter.
-	//
-	void push_ar(int index, bool become = false) {
-		// NOTE: program counter not set here!!!!!
-
+	/**
+	 * @brief Ready activation record in variable for use as current.
+	 */
+	ActivationRecord	*init_ar(int index) {
 		AnyObject *obj = m_activation_record->get(index);
 		assert(obj != nullptr);
 
 		ActivationRecord	*ar = dynamic_cast<ActivationRecord *>(obj);
 		assert(ar != nullptr);
+
+		// Clear the variable that contained it.
 		m_activation_record->set(index, nullptr);
 
-		if (become) {
-			ar->activate(m_activation_record->return_address(), m_activation_record);
-		} else {
-			ar->activate(m_program_counter + 1, m_activation_record);
-		}
+		return ar;
+	}
+
+public:
+
+	/**
+	 * @brief Init activation record for a regular call
+	 */
+	void call_init(int index) {
+		// NOTE: program counter not set here!!!!!
+		ActivationRecord	*ar = init_ar(index);
+
+		ar->activate(m_program_counter + 1, m_activation_record);
 
 		m_activation_record = ar;
 	}
 
+	/**
+	 * @brief Init activation record for tail recursion.
+	 *
+	 * 'Become' is a construct to enable tail recursion.
+	 * The new activation record takes over the return
+	 * parameters from the current activation record.
+	 * The new activation record replaced the current one, which is
+	 * discarded.
+	 *
+	 * This eliminates a stack of activation records pointing to the
+	 * same return address, which is convenient for deeply recursive
+	 * calls.
+	 */
+	void become(int index) {
+		// NOTE: program counter not set here!!!!!
+		ActivationRecord	*ar = init_ar(index);
+
+		// Set return variables to those of previous ar
+		ar->activate(
+			m_activation_record->return_address(),
+			m_activation_record->control_link()
+		);
+		// Remove previous ar
+		pop_ar(0);
+
+		m_activation_record = ar;
+	}
+
+private:
 
 	void pop_ar(int level) {
 		assert(level == 0);		// Deeper levels not handled yet
@@ -174,7 +210,12 @@ public:
 		m_activation_record->deactivate(m_program_counter, tmp);
 		delete m_activation_record;
 		m_activation_record = tmp;
+
+		// Substract 1 from program counter because it gets incremented in the loop
+		m_program_counter--;
 	}
+
+public:
 
 	ActivationRecord *control_link(int level) {
 		assert(m_activation_record != nullptr);
@@ -195,21 +236,57 @@ public:
 	void jump_relative(int target) {
 		int new_pc = m_program_counter + target;
 
+		// Substract 1 from program counter because it gets incremented in the loop
+		new_pc--;
+
 		assert(new_pc >= 0 && (unsigned) new_pc < m_program->size());
 
 		m_program_counter = new_pc;
 	}
 
+
+ /**
+  * @brief Perform absolute jump in current operations array
+  *
+  * NOTE: All jumps are relative in morpho2, so we should conform in due time.
+  *       However, absolute jumps are more convenient
+  */
 	void jump_absolute(int target) {
 		int new_pc = target;
 
+		// Substract 1 from program counter because it gets incremented in the loop
+		new_pc--;
+
 		assert(new_pc >= 0 && (unsigned) new_pc < m_program->size());
 
 		m_program_counter = new_pc;
 	}
 
+
+	/////////////////////////////////////////////
+	// Low level support of common operations
+	/////////////////////////////////////////////
+
 	/**
-	 * Main loop for this interpreter
+	 * @brief Return from current call.
+	 *
+	 * Can't use 'return' as name because reserved keyword.
+	 *
+	 * This relies on the proper initialization of the 'current'
+	 * activation record; i.e. return address and return activation record
+	 * are set in current.
+	 *
+	 * If that's the case, only the return activation record needs to be set
+	 * to current.
+	 */
+	void ret(int level = 0) {
+		assert(level == 0); // Only top-level for now
+
+		pop_ar(level);
+	}
+
+	/**
+	 * @brief Main loop for this interpreter
 	 */
 	void loop() {
 		assert(m_program != nullptr);
@@ -225,7 +302,11 @@ public:
 				break;
 			}
 
-			// TODO: The other condition is a top-level return.
+			// Top-level return.
+			// If there are no more activation records, we reached the end
+			if (m_activation_record == nullptr) {
+				break;
+			}
 		}
 	}
 };

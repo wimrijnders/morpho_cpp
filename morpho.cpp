@@ -11,12 +11,15 @@
 #include <atomic>
 #include <string>
 #include <thread>
+#include <iostream>
 #include <vector>
 #include "Runnable.h"
 #include "Operations.h"
 #include "library_functions.h"
 
 using namespace operation;
+using std::cout;
+using std::endl;
 using std::vector;
 using std::string;
 
@@ -54,42 +57,79 @@ void pop(std::vector<V> & v) {
  */
 Instruction *data[] = {
   /**
-   * NOTE: for all jumps and calls, the value to jump to is 'one before',
-   *       because program counter is always incremented.
-   *       For libraries, the program counter is not used, so then this offset doesn't occur.
+   * NOTE:
+   *
+   * - Jumps and calls are only within current instruction array
+   * - For built-in fucntions, the program counter is not used
+   * - Built-int are a form of cheating; I'm not intending to
+   *   implement lib functions in morpho assembly
    */
 
-// Entry point: fib(3)
-	new StoreArgVal(-1, 0, 3),
-	new Call(2, -1),										// Jump only within current instruction array
+// Entry point: fib(n)
+	new StoreArgVal(-1, 0, 10),
+	new Call(3, -1),
 	new Return(),
 
 // Start of function fib(n)
 	new StoreArgVar(-1, 0, 0),
 	new StoreArgVal(-1, 1, 2),
-	new Call(smaller_equal_two, -1),		// Cheating here; not intending to
-																			// implement lib functions in morpho assembly
-	new GoFalse(2),	                    // Jump three(!) instructions forward.
+	new Call(le, -1),
+	new GoFalse(3),
 	new MakeVal(1),
 	new Return(),
 
 	new StoreArgVar(-3, 0, 0),
 	new StoreArgVal(-3, 1, 1),
-	new Call(subtract, -3),							// Cheating again
+	new Call(subtract, -3),
 	new StoreArgAcc(-2, 0),
-	new Call(2, -2),										// Jump only within current instruction array
+	new Call(3, -2),
 	new StoreArgAcc(-1, 0),
 	new StoreArgVar(-3, 0, 0),
 	new StoreArgVal(-3, 1, 2),
-	new Call(subtract, -3),							// Cheating again
+	new Call(subtract, -3),
 	new StoreArgAcc(-2, 0),
-	new Call(2, -2),										// Jump only within current instruction array
+	new Call(3, -2),
 	new StoreArgAcc(-1, 1),
-	new Become(add, -1),							  // Cheating again
+	new Become(add, -1),
 	nullptr
 };
 
 InstructionArray example(data);
+
+#if 0
+//
+// Morpho2 opcodes
+//
+// Taken from --asm output of compiler for fibo example program.
+//
+Instruction *data2[] = {
+
+//#"main[f0]" =
+	new MakeVal(10),
+	new Call(3 /* "#fibo[f1]" */, 1),
+	new Return(),
+//#"fibo[f1]" =
+	new Fetch(0),
+	new MakeValP(2),
+	new Call(le /* "#<=[f2]" */, 2),
+	new GoFalse(2 /* _0 */, 0),
+	new MakeValR(1),
+//_0:
+	new Fetch(0),
+	new MakeValP(1),
+	new Call(subtract /* "#-[f2]" */, 2),
+	new Call(3 /* "#fibo[f1]" */, 1),
+	new FetchP(0),
+	new MakeValP(2),
+	new Call(subtract /* "#-[f2]" */, 2),
+	new Call(3 /* "#fibo[f1]" */, 1),
+	new CallR(add /* "#+[f2]" */, 2),
+
+	nullptr
+};
+
+InstructionArray example(data);
+#endif
 
 
 class Fiber: public Runnable, public Interpreter {
@@ -114,6 +154,11 @@ private:
 		// On return function:
 		if (!return_function()) {
 			set_done();
+
+			// WRI DEBUG
+			IntObject *obj = dynamic_cast<IntObject *>(get_acc());
+			assert(obj != nullptr);
+			cout << "Fiber done; acc: "  << obj->val() << endl;
 		}
 	}
 
