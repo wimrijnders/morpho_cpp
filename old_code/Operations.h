@@ -1,23 +1,11 @@
-#ifndef OPERATIONS_H
-#define OPERATIONS_H
-#include "Instruction.h"
+#ifndef OLD_OPERATIONS_H
+#define OLD_OPERATIONS_H
+#include "../common/Operation.h"
 #include "Interpreter.h"
+#include "old_support.h"
 
-//
-// Peform a checked cast from a variable in an
-// activation record to the type we want/expect.
-//
-template<typename T>
-T *get_convert(ActivationRecord *ar, int index) {
-	assert(ar != nullptr);
 
-	AnyObject *var = ar->get(index);
-	assert(var != nullptr);
-	T *ret = dynamic_cast<T *>(var);
-	assert(ret != nullptr);
 
-	return ret;
-}
 
 
 
@@ -34,7 +22,8 @@ using lib_func = void (Interpreter &);
  *        a position in the current operations array.
  *
  */
-class Call: public Instruction {
+class Call: public Operation {
+	int m_ar{0};
 	lib_func *m_func{nullptr};
 	int m_position{-1};
 
@@ -43,7 +32,7 @@ public:
 	 * @brief Init with library function
 	 */
 	Call(lib_func &func, int ar) :
-		Instruction(ar, 0),
+		m_ar(ar),
 		m_func(func)
 	{}
 
@@ -55,9 +44,10 @@ public:
 	 * program counter.
 	 */
 	Call(int position, int ar) :
-		Instruction(ar, 0),
+		m_ar(ar),
 		m_position(position)
 	{}
+
 
 	void execute(Interpreter &interpreter) override {
 		interpreter.call_init(m_ar);
@@ -73,14 +63,13 @@ public:
 };
 
 
-class Return: public Instruction {
+class Return: public Operation {
 private:
 	int m_lev{0};
 
 public:
 	// For the time being, only control level 0
 	Return() :
-		Instruction(0,0),
 		m_lev(0)
 	{}
 
@@ -90,16 +79,14 @@ public:
 };
 
 
-class MakeVal: public Instruction {
+class MakeVal: public Operation {
 private:
 	int m_val;		// int only for now
 
 public:
 	MakeVal(int val) :
-		Instruction(0, 0),
 		m_val(val)
-	{
-	}
+	{}
 
 	void execute(Interpreter &interpreter) override {
 		//TODO: test acc for false
@@ -115,14 +102,17 @@ public:
 // Old operations
 //////////////////////////////
 
-class StoreArgVal: public Instruction {
+class StoreArgVal: public Operation {
 private:
+	int m_ar{0};
+	int m_pos{0};
 	int m_val{0};
 	int m_pos2{0};
 
 public:
 	StoreArgVal(int ar, int pos, int val) :
-		Instruction(ar, pos),
+		m_ar(ar),
+		m_pos(pos),
 		m_val(val)
 	{}
 
@@ -133,14 +123,17 @@ public:
 	}
 };
 
-class StoreArgVar: public Instruction {
+class StoreArgVar: public Operation {
 private:
+	int m_ar{0};
+	int m_pos{0};
 	int m_lev2{0};
 	int m_pos2{0};
 
 public:
 	StoreArgVar(int ar, int pos, int lev2, int pos2) :
-		Instruction(ar, pos),
+		m_ar(ar),
+		m_pos(pos),
 		m_lev2(lev2),
 		m_pos2(pos2)
 	{}
@@ -165,11 +158,15 @@ public:
 };
 
 
-class StoreArgAcc: public Instruction {
+class StoreArgAcc: public Operation {
+private:
+	int m_ar{0};
+	int m_pos{0};
 
 public:
 	StoreArgAcc(int ar, int pos) :
-		Instruction(ar, pos)
+		m_ar(ar),
+		m_pos(pos)
 	{}
 
 
@@ -180,20 +177,22 @@ public:
 };
 
 
-class Become: public Instruction {
+class Become: public Operation {
+private:
+	int m_ar{0};
 	lib_func *m_func{nullptr};
 	int m_position{-1};
 
 public:
 	// Init with library function
 	Become(lib_func &func, int ar) : 
-		Instruction(ar, 0),
+		m_ar(ar),
 		m_func(func)
 	{}
 
 	// Init with index into the current instruction array
 	Become(int position, int ar) : 
-		Instruction(ar, 0),
+		m_ar(ar),
 		m_position(position)
 	{}
 
@@ -205,19 +204,18 @@ public:
 			m_func(interpreter);
 		} else {
 			assert(m_position != -1);
-			interpreter.jump_absolute(m_pos);
+			interpreter.jump_absolute(m_position);
 		}	
 	}
 };
 
 
-class GoFalse: public Instruction {
+class GoFalse: public Operation {
 private:
 	int m_target;
 
 public:
 	GoFalse(int target) : 
-		Instruction(0, 0),
 		m_target(target)
 	{
 	}
@@ -240,4 +238,4 @@ public:
 
 
 
-#endif // OPERATIONS_H
+#endif // OLD_OPERATIONS_H

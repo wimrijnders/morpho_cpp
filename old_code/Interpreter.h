@@ -1,10 +1,18 @@
-#ifndef INTERPRETER_H
-#define INTERPRETER_H
+#ifndef OLD_INTERPRETER_H
+#define OLD_INTERPRETER_H
 #include <memory>
-#include "Continuation.h"
-#include "common/Operation.h"
+#include "ARHandler.h"
+#include "../common/Operation.h"
 
-class Interpreter : public Continuation {
+
+class Interpreter : private ARHandler {
+public:
+	using ARHandler::set_ar;
+	using ARHandler::cur_ar;
+	using ARHandler::control_link;
+
+	OperationArray *m_code{nullptr};
+	int m_pc{-1};
 
 private:
 	std::unique_ptr<AnyObject> m_accumulator;
@@ -16,57 +24,38 @@ private:
     // by swapping the members of two classes,
     // the two classes are effectively swapped
     swap(first.m_accumulator, second.m_accumulator); 
-    Continuation::swap(first, second);
+    ARHandler::swap(first, second);
   }
 
 
-	/**
-	 * @brief Saves a snapshot of the current state as a Continuation.
-	 *
-	 * @return a reference to a new Continuation containing a snapshot of the current state.
-	 */
-	Continuation *saveAsContinuation() {
-		Continuation *tmp = new Continuation(*this);
-
-		return tmp;
-	}
-
+protected:
 
 	/**
-	 * @brief Saves a snapshot of the current state as a Continuation.
-	 *
-	 * @param narg The number of parameters to skip in the saved continuation.
-	 * @return a reference to a new Continuation containing a snapshot of the current state.
+	 * @return true if can run next activation record,
+   *         false if no more activation to run.
 	 */
-	Continuation *saveAsContinuation(int narg) {
-		assert(narg > 0);
-
-		Continuation *tmp = new Continuation(*this);
-
-		// The first arg is the accumulator, so we skip that on removal
-		if (narg - 1 > 0) {
-			tmp->stack().pop(narg - 1);
-		}
-
-		return tmp;
+	bool return_function() {
+		return ARHandler::return_function(m_pc);
 	}
-
 
 public:
 	Interpreter(OperationArray *code) {
 		m_code = code;
 		m_pc = 0;
+		ARHandler::init();
 	}
 
-
 	~Interpreter() {
+
 		// Note that m_program is not deleted. At time of writing, this is handled extern.
 	}
 
 
 	// Not sure about copying the m_activation_record here.
 	// But this is needed for correct compilation
-	Interpreter(const Interpreter &rhs) {
+	Interpreter(const Interpreter &rhs) :
+		ARHandler(rhs)
+	{
 		// Only allow this if not assigned yet.
 		assert(m_accumulator.get() == nullptr);
 		assert(m_code == nullptr);
@@ -86,6 +75,7 @@ public:
 	}
 
 	void clear() {
+		ARHandler::clear();
 		m_code = nullptr;
 	}
 
@@ -100,19 +90,20 @@ public:
 
 
 public:
-	bool return_function() {
-		assert(false); // TODO
-		return true;
-	}
+
 	//void pop_ar(int level) {
 	//	ARHandler::pop_ar(level, m_pc);
 	//}
 
 
 	void become(int index) {
-		assert(false); // TODO
+		ARHandler::become(index, m_pc);
 	}
 
+
+	void call_init(int index) {
+		ARHandler::call_init(index, m_pc);
+	}
 
 	void jump_relative(int target) {
 		int new_pc = m_pc + target;
@@ -163,7 +154,7 @@ public:
 	void ret(int level = 0) {
 		assert(level == 0); // Only top-level for now
 
-		assert(false); // TODO
+		pop_ar(level, m_pc);
 	}
 
 	/**
@@ -184,10 +175,12 @@ public:
 			}
 
 			// Top-level return.
-			// Break when nothing left to do!
-			assert(false); // TODO
+			// If there are no more activation records, we reached the end
+			if (ar_empty()) {
+				break;
+			}
 		}
 	}
 };
 
-#endif // INTERPRETER_H
+#endif // OLD_INTERPRETER_H

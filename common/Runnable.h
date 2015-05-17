@@ -1,6 +1,22 @@
 #ifndef RUNNABLE_H
 #define RUNNABLE_H
 
+/**
+ * @brief Remove first item in list without returning its value
+ *
+ * Following is deemed inefficient by stackoverflow
+ * Apparently, deque is better for popping, or use pop_back() instead.
+ *
+ * TODO: Find more efficient method later on.
+ */
+template <typename V>
+void pop(std::vector<V> & v) {
+	assert(!v.empty());
+
+	v.erase(v.begin());
+}
+
+
 //////////////////////////
 // Morpho transcription
 //////////////////////////

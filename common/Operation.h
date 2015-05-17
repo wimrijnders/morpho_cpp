@@ -4,26 +4,17 @@
 
 class Interpreter;
 
-class Instruction {
-protected:
-	int m_ar{0};
-	int m_pos{0};
-
+class Operation {
 public:
-		Instruction(int ar, int pos) :
-			m_ar(ar),
-			m_pos(pos) 
-		{}
-
-	virtual ~Instruction() {}
+	virtual ~Operation() {}
 	virtual void execute(Interpreter &interpreter) = 0;
 };
 
 
-class InstructionArray : public std::vector<Instruction *> {
+class OperationArray : public std::vector<Operation *> {
 public:
-	InstructionArray(Instruction *data[]) {
-		Instruction **ptr = data;
+	OperationArray(Operation *data[]) {
+		Operation **ptr = data;
 
 		while (*ptr != nullptr) {
 			push_back(*ptr);
@@ -32,7 +23,7 @@ public:
 	}
 
 
-	~InstructionArray() {
+	~OperationArray() {
 		for (auto &ptr: *this) {
 			delete ptr;
 			ptr = nullptr;		// Paranoia

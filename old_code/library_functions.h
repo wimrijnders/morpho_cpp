@@ -5,6 +5,9 @@
  */
 #ifndef LIBRARY_FUNCTIONS_H
 #define LIBRARY_FUNCTIONS_H
+#include <cassert>
+#include "../common/AnyObject.h"
+#include "old_support.h"
 
 ///////////////////////////////////////////////////////////////////////
 // Built-in functions.
@@ -18,44 +21,7 @@
 //
 ///////////////////////////////////////////////////////////////////////
 
-/**
- * @brief Get variables 0 and 1 from current activation records and
- *        return them by reference as integer values.
- *
- * This is a (perhaps) temporary convenience function to facilitate
- * dealing with operations handling two integer values.
- *
- * Assumptions:
- *  - There are at least two variables present.
- *  - They are indeed both integers
- *
- * If the assumptions are incorrect, assertions will fire and/or
- * bad stuff will happen.
- *
- * NOTE: This function should not be externally callable!
- *
- */
-void get_integers(Interpreter &interpreter, int &out_int1, int &out_int2) {
-  assert(false); // TODO
-}
 
-
-/**
- * @brief Put obj in the accumulator and return from current method.
- *
- * This is a (perhaps) temporary convenience function to facilitate
- * dealing with operations handling two integer values.
- *
- * NOTE: This function should not be externally callable!
- *
- */
-void return_acc(Interpreter &interpreter, AnyObject *obj) {
-  assert(obj);
-
-  // return value in accumulator
-  interpreter.set_acc(obj);
-  interpreter.ret();
-}
 
 /**
  * @brief Put integer val in the accumulator and return from current method.

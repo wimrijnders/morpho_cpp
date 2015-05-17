@@ -1,8 +1,10 @@
 #ifndef ACTIVATIONRECORD_H
 #define ACTIVATIONRECORD_H
+#include <cassert>
 #include <string>
-#include "AnyObject.h"
+#include "../common/AnyObject.h"
 #include "Environment.h"
+
 
 
 /**
@@ -18,8 +20,8 @@ private:
 	Environment m_environment;
 
 	// Where to go to in case of exception
-	// Not clear yet how this should work
-	AnyObject *m_exception_continuation{nullptr};
+	// Not used yet
+	ActivationRecord *m_exception_continuation{nullptr};
 
 	std::string m_function_name;
 	std::string m_file_name;
