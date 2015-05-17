@@ -7,7 +7,7 @@
 #define LIBRARY_FUNCTIONS_H
 #include <cassert>
 #include "../common/AnyObject.h"
-#include "old_support.h"
+#include "support.h"
 
 ///////////////////////////////////////////////////////////////////////
 // Built-in functions.
