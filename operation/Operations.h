@@ -19,15 +19,17 @@ using lib_func = void (Interpreter &);
  */
 class Call: public Operation {
 	int m_nargs{0};
+	int m_nenv{0};
 	lib_func *m_func{nullptr};
-	int m_position{-1};
+	int m_offset{0};
 
 public:
 	/**
 	 * @brief Init with library function
 	 */
-	Call(lib_func &func, int nargs) :
+	Call(lib_func &func, int nargs = 0, int nenv = 0) :
 		m_nargs(nargs),
+		m_nenv(nenv),
 		m_func(func)
 	{}
 
@@ -38,59 +40,64 @@ public:
 	 * The position is passed as a relative jump from the current
 	 * program counter.
 	 */
-	Call(int position, int nargs) :
+	Call(int offset, int nargs = 0, int nenv = 0) :
 		m_nargs(nargs),
-		m_position(position)
+		m_nenv(nenv),
+		m_offset(offset)
 	{}
 
 
 	void execute(Interpreter &interpreter) override {
-		assert(false);  // TODO
-		//interpreter.call_init(m_ar);
-
 		if (m_func != nullptr) {
-			assert(m_position == -1);
+			assert(m_offset == 0);
 			m_func(interpreter);
 		} else {
-			assert(m_position != -1);
-			interpreter.jump_absolute(m_position);
+			assert(m_offset != 0);
+			interpreter.call(m_offset, m_nenv, m_nargs);
 		}
 	}
 };
 
 class CallR: public Operation {
 private:
-	int m_ar{0};
+	int m_nargs{0};
+	int m_nenv{0};
 	lib_func *m_func{nullptr};
-	int m_position{-1};
+	int m_offset{0};
 
 public:
 	// Init with library function
-	CallR(lib_func &func, int ar) :
-		m_ar(ar),
+	CallR(lib_func &func, int nargs = 0, int nenv = 0) :
+		m_nargs(nargs),
+		m_nenv(nenv),
 		m_func(func)
 	{}
 
 	// Init with index into the current instruction array
-	CallR(int position, int ar) :
-		m_ar(ar),
-		m_position(position)
+	CallR(int offset, int nargs = 0, int nenv = 0) :
+		m_nargs(nargs),
+		m_nenv(nenv),
+		m_offset(offset)
 	{}
 
 	void execute(Interpreter &interpreter) override {
-		assert(false);  // TODO
-
-		interpreter.become(m_ar);
-
 		if (m_func != nullptr) {
-			assert(m_position == -1);
+			// TODO: nargs, nenv neglected for builtin calls!
+
+			assert(m_offset == 0);
 			m_func(interpreter);
+
+			// NOTE: in the java code, the acc it temporarily stored
+			//       before executing the return. At this time, this
+			//       does not appear to be necessary.
+			interpreter.ret();
 		} else {
-			assert(m_position != -1);
-			interpreter.jump_absolute(m_position);
+			assert(m_offset != 0);
+			interpreter.become(m_offset, m_nenv, m_nargs);
 		}
 	}
 };
+
 
 class Return: public Operation {
 private:
@@ -118,8 +125,6 @@ public:
 	{}
 
 	void execute(Interpreter &interpreter) override {
-		//TODO: test acc for false
-
 		interpreter.set_acc(new IntObject(m_val));
 	}
 };
@@ -135,7 +140,9 @@ public:
 	{}
 
 	void execute(Interpreter &interpreter) override {
-		assert(false); // TODO
+		// Following is the only difference with MakeVal
+		interpreter.push();
+		interpreter.set_acc(new IntObject(m_val));
 	}
 };
 
@@ -150,7 +157,9 @@ public:
 	{}
 
 	void execute(Interpreter &interpreter) override {
-		assert(false); // TODO
+		interpreter.set_acc(new IntObject(m_val));
+		// Following is the only difference with MakeVal
+		interpreter.ret();
 	}
 };
 
@@ -166,8 +175,7 @@ public:
 	{}
 
 	void execute(Interpreter &interpreter) override {
-		assert(false); // TODO
-		//interpreter.ret(m_pos);
+		interpreter.doFetch(m_pos);
 	}
 };
 
@@ -176,24 +184,17 @@ private:
 	int m_pos{0};
 
 public:
-	// For the time being, only control level 0
 	FetchP(int pos) :
 		m_pos(pos)
 	{}
 
 	void execute(Interpreter &interpreter) override {
-		assert(false); // TODO
-		//interpreter.ret(m_pos);
+		// NOTE: Following is different from java version!
+		//       Perhaps a bug?
+		interpreter.push();
+		interpreter.doFetch(m_pos);
 	}
 };
-
-//////////////////////////////
-// Old operations
-//////////////////////////////
-
-
-
-
 
 
 class GoFalse: public Operation {
@@ -205,12 +206,9 @@ public:
 	GoFalse(int target, int val2) :
 		m_target(target),
 		m_val2(val2)
-	{
-	}
+	{}
 
 	void execute(Interpreter &interpreter) override {
-		assert(false);  // TODO
-
 		// Test acc for false
 		AnyObject *var = interpreter.get_acc();
 		assert(var != nullptr);

@@ -1,9 +1,3 @@
-#include "morpho.cpp"
-
-// Needs to be defined before class Machine
-const int NUM_WORKER_THREADS = 0;
-
-
 #include <cassert>
 #include <atomic>
 #include <string>
@@ -18,6 +12,10 @@ const int NUM_WORKER_THREADS = 0;
 #include "operation/Operations.h"
 #include "library_functions.h"
 #include "Task.h"
+
+// Needs to be defined before class Machine
+const int NUM_WORKER_THREADS = 0;
+
 #include "Machine.h"
 
 using std::cout;
@@ -35,7 +33,7 @@ Operation *data[] = {
 
 //#"main[f0]" =
 	new MakeVal(10),
-	new Call(3 /* "#fibo[f1]" */, 1),
+	new Call(2 /* "#fibo[f1]" */, 1),
 	new Return(),
 //#"fibo[f1]" =
 	new Fetch(0),
@@ -47,11 +45,11 @@ Operation *data[] = {
 	new Fetch(0),
 	new MakeValP(1),
 	new Call(subtract /* "#-[f2]" */, 2),
-	new Call(3 /* "#fibo[f1]" */, 1),
+	new Call(-8 /* "#fibo[f1]" */, 1),
 	new FetchP(0),
 	new MakeValP(2),
 	new Call(subtract /* "#-[f2]" */, 2),
-	new Call(3 /* "#fibo[f1]" */, 1),
+	new Call(-12 /* "#fibo[f1]" */, 1),
 	new CallR(add /* "#+[f2]" */, 2),
 
 	nullptr

@@ -22,8 +22,7 @@ private:
 
 		loop();
 
-		// On return function:
-		if (!return_function()) {
+		if (is_dead()) {
 			set_done();
 
 			// WRI DEBUG

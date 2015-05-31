@@ -7,7 +7,13 @@
 class Interpreter : public Continuation {
 
 private:
+
+	// NOTE: the accumulator is the first argument (index 0) when making a call.
+	//       Acc value is pushed as last on the variables stack when nargs >= 1.
 	std::unique_ptr<AnyObject> m_accumulator;
+
+	bool m_dead{true};
+
 
   void swap(Interpreter &first, Interpreter &second) /* nothrow */ {
     // enable ADL (not necessary in our case, but good practice)
@@ -17,50 +23,23 @@ private:
     // the two classes are effectively swapped
     swap(first.m_accumulator, second.m_accumulator); 
     Continuation::swap(first, second);
+    swap(first.m_dead, second.m_dead);
   }
-
-
-	/**
-	 * @brief Saves a snapshot of the current state as a Continuation.
-	 *
-	 * @return a reference to a new Continuation containing a snapshot of the current state.
-	 */
-	Continuation *saveAsContinuation() {
-		Continuation *tmp = new Continuation(*this);
-
-		return tmp;
-	}
-
-
-	/**
-	 * @brief Saves a snapshot of the current state as a Continuation.
-	 *
-	 * @param narg The number of parameters to skip in the saved continuation.
-	 * @return a reference to a new Continuation containing a snapshot of the current state.
-	 */
-	Continuation *saveAsContinuation(int narg) {
-		assert(narg > 0);
-
-		Continuation *tmp = new Continuation(*this);
-
-		// The first arg is the accumulator, so we skip that on removal
-		if (narg - 1 > 0) {
-			tmp->stack().pop(narg - 1);
-		}
-
-		return tmp;
-	}
 
 
 public:
 	Interpreter(OperationArray *code) {
+		assert(code != nullptr);
+
 		m_code = code;
 		m_pc = 0;
+		m_dead = false;
 	}
 
 
 	~Interpreter() {
-		// Note that m_program is not deleted. At time of writing, this is handled extern.
+		// Note that program pointed to (m_code) is not deleted.
+		// At time of writing, this is handled extern.
 	}
 
 
@@ -73,7 +52,8 @@ public:
 
 		// assignment to acc intentionally skipped here
 		m_code = rhs.m_code;
-		m_pc = rhs.m_pc;
+		m_pc   = rhs.m_pc;
+		m_dead = rhs.m_dead;
 	}
 
 	Interpreter(Interpreter &&rhs) /* : Interpreter() */ {
@@ -98,21 +78,7 @@ public:
 	}
 
 
-
 public:
-	bool return_function() {
-		assert(false); // TODO
-		return true;
-	}
-	//void pop_ar(int level) {
-	//	ARHandler::pop_ar(level, m_pc);
-	//}
-
-
-	void become(int index) {
-		assert(false); // TODO
-	}
-
 
 	void jump_relative(int target) {
 		int new_pc = m_pc + target;
@@ -143,6 +109,38 @@ public:
 		m_pc = new_pc;
 	}
 
+	void call(int offset, int nenv, int narg)	{
+		// Built-ins should be called directly, not through this method
+
+		push_return_continuation(narg);
+		jump_relative(offset);
+
+		fixStackForCall(m_accumulator.get(), nenv,narg);
+	}
+
+	/**
+	 * @brief As call(), but doesn't push a continuation.
+	 *
+	 * Instead, it uses the current m_ret to return.
+	 */
+	void become(int offset, int nenv, int narg) {
+		jump_relative(offset);
+
+		fixStackForCall(m_accumulator.get(), nenv,narg);
+	}
+
+	void doFetch(int pos) {
+		m_accumulator.reset(fetch(pos));
+	}
+
+
+  /**
+   * @brief Push value of accumulator on the stack
+   */
+  void push() {
+    Continuation::push(m_accumulator.get());
+  }
+
 
 	/////////////////////////////////////////////
 	// Low level support of common operations
@@ -163,8 +161,13 @@ public:
 	void ret(int level = 0) {
 		assert(level == 0); // Only top-level for now
 
-		assert(false); // TODO
+		m_dead = !call_ret();
 	}
+
+	bool is_dead() {
+		return m_dead;
+	}
+
 
 	/**
 	 * @brief Main loop for this interpreter
@@ -184,8 +187,9 @@ public:
 			}
 
 			// Top-level return.
-			// Break when nothing left to do!
-			assert(false); // TODO
+			if (is_dead()) {
+				break;
+			}
 		}
 	}
 };
