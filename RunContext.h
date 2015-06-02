@@ -38,6 +38,11 @@ protected:
     m_stack.fixStackForCall(acc, nenv, narg);
   }
 
+	void fixStackForClosureCall(AnyObject *acc, StackLink &env, int narg ) {
+
+		m_stack.fixStackForClosureCall(acc, env, narg);
+	}
+
 	AnyObject *fetch(int pos) {
 		return m_stack.fetch(pos);
 	}

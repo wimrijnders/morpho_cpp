@@ -30,7 +30,6 @@ public:
 // Morpho2 operations
 //////////////////////////////
 
-using lib_func = void (Interpreter &);
 
 
 #include "Call.h"
@@ -135,7 +134,7 @@ private:
 	int m_drops;
 
 public:
-	GoFalse(int target, int drops = 0) :
+	GoTrue(int target, int drops = 0) :
 		m_target(target),
 		m_drops(drops)
 	{}

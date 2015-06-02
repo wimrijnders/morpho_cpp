@@ -1,5 +1,6 @@
 #ifndef ANYOBJECT_H
 #define ANYOBJECT_H
+#include <string>
 
 /**
  * Proxy for later handling.
@@ -34,4 +35,16 @@ public:
 	bool val() { return m_val; }
 };
 
+
+class StringObject : public AnyObject {
+private:
+	std::string m_val;
+
+public:
+	StringObject(std::string val) : m_val(val) {}
+
+	AnyObject *clone() { return new StringObject(m_val); }
+
+	const std::string &val() { return m_val; }
+};
 #endif // ANYOBJECT_H

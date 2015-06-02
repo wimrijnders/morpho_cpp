@@ -115,31 +115,51 @@ public:
 	void fixStackForCall(AnyObject *acc, int nenv, int narg) {
 
 		// Get bottom nenv variables in stack
-		VarList env;
+		VarList vars;
 
 		if (nenv > 0) {
-			std::copy(m_variables.begin(), m_variables.begin() + nenv, env.begin());
+			std::copy(m_variables.begin(), m_variables.begin() + nenv, vars.begin());
 		};
 
 		// Get the parameters that we want at the 'top' of the stack.
 		if( (narg -1) > 0 ) {
-			env.insert(env.end(), m_variables.end() - (narg -1), m_variables.end());
+			vars.insert(vars.end(), m_variables.end() - (narg -1), m_variables.end());
 		}
 
 		// The acc value is the topmost value on the stack.
 		if (narg  > 0) {
-			env.push_back(acc->clone());
+			vars.push_back(acc->clone());
 		}
 
-		m_variables = env;
+		m_variables = vars;
 	}
 
 
+	void fixStackForClosureCall(AnyObject *acc, StackLink &env, int narg) {
+
+		// Get bottom nenv variables in stack
+		VarList vars;
+
+		// Use passed StackLink instance as environment variables.
+		std::copy(env.m_variables.begin(), env.m_variables.end(), vars.begin());
+
+		// Get the parameters that we want at the 'top' of the stack.
+		if( (narg -1) > 0 ) {
+			vars.insert(vars.end(), m_variables.end() - (narg -1), m_variables.end());
+		}
+
+		// The acc value is the topmost value on the stack.
+		if (narg  > 0) {
+			vars.push_back(acc->clone());
+		}
+
+		m_variables = vars;
+	}
+
 	/**
-	 * @brief Retrieves a variable from the stack
+	 * @brief Retrieves an environment variable from the stack.
 	 *
-	 * This works on the environment side of the stack, not the temp values!
-	 * The latter are handled with push/pop.
+	 * This works on the environment side of the stack, not the parameter values!
 	 * The environment var's are logically indexed back to front; hence, in this
 	 * implementation they are in the correct order.
 	 *
@@ -147,6 +167,19 @@ public:
 	AnyObject *fetch(int pos) {
 		return m_variables[pos]->clone();
 		//return m_variables[m_variables.size() -1 - pos]->clone();
+	}
+
+	/**
+	 * @brief Retrieves a parameter variable from the stack.
+	 *
+	 * The variables are logically indexed back to front; hence, we
+	 * need to access from the back.
+	 *
+	 */
+	AnyObject *get_arg(int pos) {
+		assert(pos > 0); // value 0 is the accumulator
+
+		return m_variables[m_variables.size() - pos ]->clone();
 	}
 };
 

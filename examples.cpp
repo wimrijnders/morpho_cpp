@@ -5,7 +5,10 @@
 //
 // The generated opcodes depend on the compiler version
 ///////////////////////////////////////////////////////////
+#include "operation/Operations.h"
+#include "library_functions.h"
 
+using namespace operation;
 
 //
 // Opcodes for fibo.morpho
@@ -72,14 +75,14 @@ Operation *data_closure_morpho1[] = {
 	new FetchR(2),
 // _4:
 	new Call(0 /* #"?[?]=?[f3]" */, 3),
-	new Drop(1),
+	// !! NOT DEFINED IN MORPHO2 new Drop(1),
 // _2:
 	new Fetch(0),
 	new Call(0 /* #"inc[f1]" */, 1),
 	new Store(0),
 	new Go(0 /* _0 */),
 // _1:
-	new MakeVal(null),
+	new MakeVal(nullptr),
 	new MakeValP(true),
 	new MakeValP(true),
 	new MakeValP(0),
@@ -107,7 +110,7 @@ Operation *data_closure_morpho1[] = {
 	new Call(0 /* #"==[f2]" */, 2),
 // _9:
 	new Store(4),
-	new Drop(1),
+	// !! NOT DEFINED IN MORPHO2 new Drop(1),
 // _7:
 	new Fetch(2),
 	new Call(0 /* #"inc[f1]" */, 1),

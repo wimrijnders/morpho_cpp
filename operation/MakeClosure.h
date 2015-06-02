@@ -66,16 +66,8 @@ public:
 using MakeClosureP = OperationP<MakeClosure>;
 //using MakeClosureR = OperationR<MakeClosure>;
 
-#if 0
-class MakeClosureP: public MakeClosure {
-public:
-	using MakeClosure::MakeClosure;
 
-	void execute(Interpreter &interpreter) override {
-		interpreter.push();
-		MakeClosure::execute(interpreter);
-	}
-};
-#endif
+} // namespace operation
+
 
 #endif // MAKECLOSURE_H

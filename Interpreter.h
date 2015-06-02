@@ -1,8 +1,28 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
+#include <sstream>
 #include <memory>
+#include <exception>
+#include <string>
 #include "Continuation.h"
+#include "Closure.h"
 #include "common/Operation.h"
+
+
+class Error : public std::exception {
+private:
+   std::string s;
+
+public:
+   Error() {}
+   Error(std::string ss) : s(ss) {}
+   ~Error() throw () {}
+   void msg(std::string ss) { s = ss; }
+
+   const char* what() const throw() { return s.c_str(); }
+};
+
+
 
 class Interpreter : public Continuation {
 
@@ -181,6 +201,22 @@ public:
 			}
 		}
 	}
+
+
+	AnyObject *get_arg(int narg) {
+		AnyObject *tmp = nullptr;
+
+		if(narg == 0) {
+			tmp = m_accumulator.get();
+		} else {
+				tmp = stack().get_arg(narg);
+		}
+
+		return tmp;
+	}
+
+
+	void callClosure(int narg);
 };
 
 #endif // INTERPRETER_H
