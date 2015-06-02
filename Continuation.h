@@ -1,41 +1,36 @@
 #ifndef CONTINUATION_H
 #define CONTINUATION_H
-#include <memory>  // swap()
-#include "StackLink.h"
-#include "common/Operation.h"
+#include "RunContext.h"
 
-class Continuation {
+class Continuation : public RunContext {
 private:
-
-	StackLink m_stack;
 
 	// Used for debugging and/or interactive environment StackLink[] m_display;
 	Continuation *m_ret{nullptr};
 	Continuation *m_ex{nullptr};
 
-	void disconnect() {
-		// Pre: continuation copied beforehand to current state
-		m_ret = nullptr;
-		m_ex = nullptr;
-		m_stack.clear();
-	}
 
 protected:
-	OperationArray *m_code{nullptr};
-	int m_pc{-1};
 
   static void swap(Continuation &first, Continuation &second) /* nothrow */ {
     // enable ADL (not necessary in our case, but good practice)
     using std::swap;
 
-    assert(first.m_code == nullptr);
+    RunContext::swap(first, second);
 
     // by swapping the members of two classes,
     // the two classes are effectively swapped
-    swap(first.m_code, second.m_code);
-    swap(first.m_pc, second.m_pc);
+    swap(first.m_ret, second.m_ret);
+    swap(first.m_ex, second.m_ex);
   }
 
+	void disconnect() {
+		// Pre: continuation copied beforehand to current state
+		m_ret = nullptr;
+		m_ex = nullptr;
+
+		RunContext::disconnect();
+	}
 
   /**
    * @brief set return continuation as current continuation
@@ -54,9 +49,6 @@ protected:
     }
   }
 
-  void fixStackForCall(AnyObject *acc, int nenv, int narg) {
-    m_stack.fixStackForCall(acc, nenv, narg);
-  }
 
 	/**
 	 * @param narg The number of parameters to skip in the saved continuation.
@@ -75,28 +67,13 @@ protected:
     // Note that one less than narg is stored.
     // This is analogous to java code; apparently, the acc
     // is regarded as the first parameter.
-    if (narg -1 > 0) {
-      tmp->m_stack.pop(narg - 1);
-    }
+    tmp->drop(narg - 1);
 
     return tmp;
   }
 
-	AnyObject *fetch(int pos) {
-		return m_stack.fetch(pos);
-	}
-
-  void push(AnyObject *obj) {
-    m_stack.push(obj);
-  }
 
 public:
-
-  AnyObject *pop() {
-    return m_stack.pop();
-  }
-
-  StackLink &stack() { return m_stack; }
 
 	/**
 	 * @param narg The number of parameters to skip in the saved continuation.

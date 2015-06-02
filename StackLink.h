@@ -17,6 +17,7 @@ class StackLink {
   using VarList = std::vector<AnyObject *>;
 private:
   VarList m_variables;
+
 public:
   StackLink() = default;
 
@@ -80,6 +81,16 @@ public:
     return tmp;
   }
 
+
+  StackLink get_env(int nenv) const{
+    StackLink tmp;
+
+		if (nenv > 0) {
+			std::copy(m_variables.begin(), m_variables.begin() + nenv, tmp.m_variables.begin());
+		};
+
+    return tmp;
+  }
 
 	/**
 	 * @brief Prepares the stack for entering a called function.

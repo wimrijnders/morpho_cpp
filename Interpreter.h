@@ -80,17 +80,6 @@ public:
 
 public:
 
-	void jump_relative(int target) {
-		int new_pc = m_pc + target;
-
-		// Substract 1 from program counter because it gets incremented in the loop
-		new_pc--;
-
-		assert(new_pc >= 0 && (unsigned) new_pc < m_code->size());
-
-		m_pc = new_pc;
-	}
-
 
  /**
   * @brief Perform absolute jump in current operations array

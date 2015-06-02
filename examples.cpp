@@ -1,44 +1,59 @@
-#include <cassert>
-#include <atomic>
-#include <string>
-#include <thread>
-#include <iostream>
-#include <vector>
-#include "common/Operation.h"
-#include "StackLink.h"
-#include "Continuation.h"
-#include "common/Runnable.h"
-#include "Interpreter.h"
-#include "operation/Operations.h"
-#include "library_functions.h"
-#include "Task.h"
+//
+// Opcodes from examples
+//
+// Taken from --asm output of compiler for example programs.
+//
+// The generated opcodes depend on the compiler version
+///////////////////////////////////////////////////////////
 
-// Needs to be defined before class Machine
-const int NUM_WORKER_THREADS = 0;
 
-#include "Machine.h"
+//
+// Opcodes for fibo.morpho
+//
+// NOTE: This is from a compiler version preceding current
+//       morpho and morpho2. The opcodes are valid in all versions
+//
+Operation *data_fibo_old_morpho[] = {
 
-using std::cout;
-using std::endl;
-using std::vector;
-using std::string;
-using namespace operation;
+//#"main[f0]" =
+	new MakeVal(10),
+	new Call(2 /* "#fibo[f1]" */, 1),
+	new Return(),
+//#"fibo[f1]" =
+	new Fetch(0),
+	new MakeValP(2),
+	new Call(le /* "#<=[f2]" */, 2),
+	new GoFalse(2 /* _0 */, 0),
+	new MakeValR(1),
+//_0:
+	new Fetch(0),
+	new MakeValP(1),
+	new Call(subtract /* "#-[f2]" */, 2),
+	new Call(-8 /* "#fibo[f1]" */, 1),
+	new FetchP(0),
+	new MakeValP(2),
+	new Call(subtract /* "#-[f2]" */, 2),
+	new Call(-12 /* "#fibo[f1]" */, 1),
+	new CallR(add /* "#+[f2]" */, 2),
+
+	nullptr
+};
+
+
 
 
 
 //
 // Opcodes from closures.morpho example program
 //
-// NOTE: This is for morpho2
+// NOTE: this is for morpho version 1 (not morpho2)
 //
-Operation *data_closure_morpho2[] = {
+Operation *data_closure_morpho1[] = {
 
 // TODO: Fix all zero offsets!
 
-// "closures.mexe" = main in
-// {{
-// #"main[f0]" =
-// [
+//#"main[f0]" =
+//	[
 	new MakeVal(nullptr),
 	new MakeValP(10),
 	new Call(0 /* #"makeArray[f1]" */, 1),
@@ -52,19 +67,19 @@ Operation *data_closure_morpho2[] = {
 	new Fetch(0),
 	new FetchP(1),
 	new FetchP(0),
-	new MakeClosureP(0 /* _3 */, 0, 3, 0 /* _4 */),
+	new MakeClosureP(1 /* _3 */, 0, 5, 2 /* _4 */),
 // _3:
 	new FetchR(2),
 // _4:
 	new Call(0 /* #"?[?]=?[f3]" */, 3),
-	new Go(0, 1),
+	new Drop(1),
 // _2:
 	new Fetch(0),
 	new Call(0 /* #"inc[f1]" */, 1),
 	new Store(0),
 	new Go(0 /* _0 */),
 // _1:
-	new MakeVal(nullptr),
+	new MakeVal(null),
 	new MakeValP(true),
 	new MakeValP(true),
 	new MakeValP(0),
@@ -73,7 +88,7 @@ Operation *data_closure_morpho2[] = {
 	new Fetch(2),
 	new MakeValP(10),
 	new Call(0 /* #"!=[f2]" */, 2),
-	new GoFalse(0 /*_6 */, 0),
+	new GoFalse(0 /* _6 */, 0),
 	new Fetch(1),
 	new FetchP(2),
 	new Call(0 /* #"?[?][f2]" */, 2),
@@ -92,7 +107,7 @@ Operation *data_closure_morpho2[] = {
 	new Call(0 /* #"==[f2]" */, 2),
 // _9:
 	new Store(4),
-	new Go(0, 1),
+	new Drop(1),
 // _7:
 	new Fetch(2),
 	new Call(0 /* #"inc[f1]" */, 1),
@@ -111,32 +126,6 @@ Operation *data_closure_morpho2[] = {
 	new MakeVal("nonnested OK"),
 	new CallR(0 /* #"writeln[f1]" */, 1),
 // ];
-// }}
-// *
-// BASIS
-// ;
 
 	nullptr
 };
-
-
-
-OperationArray example(data_closure_morpho2);
-
-
-//////////////////////////
-// Entry point
-//////////////////////////
-
-int main(int argc, char *argv[]) {
-	Machine machine;
-
-	// load program here
-	machine.add_code(&example);
-
-	machine.start();
-
-	return 0;
-}
-
-
