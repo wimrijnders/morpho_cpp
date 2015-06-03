@@ -41,8 +41,14 @@ void return_acc(Interpreter &interpreter, AnyObject *obj) {
 void set_acc(Interpreter &interpreter, int val);
 
 void le(Interpreter &interpreter);
+void eq(Interpreter &interpreter);
+void ne(Interpreter &interpreter);
 void subtract(Interpreter &interpreter);
+void inc(Interpreter &interpreter);
 void add(Interpreter &interpreter);
+void makeArray(Interpreter &interpreter);
+void array_get(Interpreter &interpreter);
+void array_put(Interpreter &interpreter);
 
 
 #endif //LIBRARY_FUNCTIONS_H

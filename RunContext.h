@@ -47,12 +47,20 @@ protected:
 		return m_stack.fetch(pos);
 	}
 
+
+
   void push(AnyObject *obj) {
     m_stack.push(obj);
   }
 
 
 public:
+
+	void store(AnyObject *obj, int pos) {
+		m_stack.store(obj, pos);
+	}
+
+
   void drop(int nargs) {
     if (nargs > 0) {
       m_stack.pop(nargs);

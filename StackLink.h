@@ -50,7 +50,11 @@ public:
   }
 
   void push(AnyObject *obj) {
-    m_variables.push_back(obj->clone());
+    AnyObject *tmp = nullptr;
+    if (obj != nullptr) {
+      tmp = obj->clone();
+    }
+    m_variables.push_back(tmp);
   }
 
   /**
@@ -168,6 +172,32 @@ public:
 		return m_variables[pos]->clone();
 		//return m_variables[m_variables.size() -1 - pos]->clone();
 	}
+
+
+	/**
+	 * @brief Put an environment variable on the stack.
+	 *
+	 * This is the counterpart to fetch().
+	 *
+	 * Apparently, regarding the logic in the generated opcodes,
+	 * it is necessary to create an empty location (with null value)
+	 * before you write to it.
+	 *
+	 */
+	void store(AnyObject *obj, int pos) {
+		if (m_variables[pos] != nullptr) {
+			delete m_variables[pos];
+		}
+
+		if (obj != nullptr) {
+			m_variables[pos] = obj->clone();
+		} else {
+			// Not sure if this is allowed to happen
+			assert(false);
+			m_variables[pos] = nullptr;
+		}
+	}
+
 
 	/**
 	 * @brief Retrieves a parameter variable from the stack.

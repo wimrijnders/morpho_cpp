@@ -49,7 +49,8 @@ Operation *data_fibo_old_morpho[] = {
 //
 // Opcodes from closures.morpho example program
 //
-// NOTE: this is for morpho version 1 (not morpho2)
+// NOTE: This is for morpho version 1 (not morpho2).
+//       Notable, morpho2 does not have Drop.
 //
 Operation *data_closure_morpho1[] = {
 

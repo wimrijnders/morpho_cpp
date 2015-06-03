@@ -98,8 +98,6 @@ public:
 	}
 
 
-public:
-
 
  /**
   * @brief Perform absolute jump in current operations array

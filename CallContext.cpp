@@ -3,7 +3,7 @@
 
 
 bool CallContext::call_builtin(Interpreter &interpreter){
-	if (m_func != nullptr) {
+	if (m_func == nullptr) {
 		return false;
 	}
 

@@ -99,7 +99,8 @@ public:
 	{}
 
 	void execute(Interpreter &interpreter) override {
-		assert(false); //TODO
+		// Put stack in given env variable position
+		interpreter.store(interpreter.get_acc(), m_pos);
 	}
 };
 

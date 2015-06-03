@@ -1,6 +1,27 @@
 #include "library_functions.h"
 #include "Interpreter.h"
 
+
+static void get_integer(Interpreter &interpreter, int &out_int) {
+  auto val = dynamic_cast<IntObject *>(interpreter.get_acc());
+
+  assert(val != nullptr);
+
+  out_int = val->val();
+}
+
+
+static void pop_integer(Interpreter &interpreter, int &out_int) {
+  auto val = dynamic_cast<IntObject *>(interpreter.pop());
+
+  assert(val != nullptr);
+
+  out_int = val->val();
+
+  delete val;
+}
+
+
 /**
  * @brief Compare first item on stack with acc.
  *
@@ -24,17 +45,10 @@
  *
  */
 static void get_integers(Interpreter &interpreter, int &out_int1, int &out_int2) {
-  auto val1 = dynamic_cast<IntObject *>(interpreter.pop());
-  auto val2 = dynamic_cast<IntObject *>(interpreter.get_acc());
-
-  assert(val1 != nullptr);
-  assert(val2 != nullptr);
-
-  out_int1 = val1->val();
-  out_int2 = val2->val();
-
-  delete val1;
+  pop_integer(interpreter, out_int1);
+  get_integer(interpreter, out_int2);
 }
+
 
 /**
  * @brief Put integer val in the accumulator.
@@ -57,6 +71,19 @@ void le(Interpreter &interpreter) {
 	interpreter.set_acc(new BoolObject(int1 <= int2));
 }
 
+void eq(Interpreter &interpreter) {
+	int int1, int2;
+	get_integers(interpreter, int1, int2);
+
+	interpreter.set_acc(new BoolObject(int1 == int2));
+}
+
+void ne(Interpreter &interpreter) {
+	int int1, int2;
+	get_integers(interpreter, int1, int2);
+
+	interpreter.set_acc(new BoolObject(int1 != int2));
+}
 
 void subtract(Interpreter &interpreter) {
 	int int1, int2;
@@ -66,9 +93,55 @@ void subtract(Interpreter &interpreter) {
 }
 
 
+void inc(Interpreter &interpreter) {
+	int int1;
+	get_integer(interpreter, int1);
+
+	set_acc(interpreter, int1 + 1);
+}
+
+
 void add(Interpreter &interpreter) {
 	int int1, int2;
 	get_integers(interpreter, int1, int2);
 
 	set_acc(interpreter, int1 + int2);
+}
+
+
+void makeArray(Interpreter &interpreter) {
+	int size;
+	get_integer(interpreter, size);
+	interpreter.set_acc(new ArrayObject(size));
+}
+
+
+void array_get(Interpreter &interpreter) {
+  int index;
+  get_integer(interpreter, index);
+  // TODO: throw new Error("Invalid index type for builtin JAVA_ARRAYGET");
+
+  auto arr = dynamic_cast<ArrayObject *>(interpreter.pop());
+  assert(arr != nullptr);
+
+  AnyObject *val = arr->get(index);
+
+  interpreter.set_acc(val);
+
+	arr->clear();
+	delete arr;
+}
+
+
+void array_put(Interpreter &interpreter) {
+  int index;
+  pop_integer(interpreter, index);
+  // TODO: throw new Error("Invalid index type for builtin JAVA_ARRAYGET");
+
+  auto arr = dynamic_cast<ArrayObject *>(interpreter.pop());
+  assert(arr != nullptr);
+
+  arr->set(index, interpreter.get_acc());
+
+  // Acc stays same value
 }
