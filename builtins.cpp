@@ -1,9 +1,10 @@
-#include "library_functions.h"
+#include <iostream>
+#include "builtins.h"
 #include "Interpreter.h"
 
 
 static void get_integer(Interpreter &interpreter, int &out_int) {
-  auto val = dynamic_cast<IntObject *>(interpreter.get_acc());
+  auto val = dynamic_cast<IntObject *>(interpreter.get_acc().get());
 
   assert(val != nullptr);
 
@@ -12,13 +13,12 @@ static void get_integer(Interpreter &interpreter, int &out_int) {
 
 
 static void pop_integer(Interpreter &interpreter, int &out_int) {
-  auto val = dynamic_cast<IntObject *>(interpreter.pop());
+  auto obj = interpreter.pop();
+  auto val = obj.cast<IntObject>();
 
   assert(val != nullptr);
 
   out_int = val->val();
-
-  delete val;
 }
 
 
@@ -121,15 +121,10 @@ void array_get(Interpreter &interpreter) {
   get_integer(interpreter, index);
   // TODO: throw new Error("Invalid index type for builtin JAVA_ARRAYGET");
 
-  auto arr = dynamic_cast<ArrayObject *>(interpreter.pop());
-  assert(arr != nullptr);
+  auto obj = interpreter.pop();
+  auto arr = obj.cast<ArrayObject>();
 
-  AnyObject *val = arr->get(index);
-
-  interpreter.set_acc(val);
-
-	arr->clear();
-	delete arr;
+  interpreter.set_acc(arr->get(index));
 }
 
 
@@ -138,10 +133,16 @@ void array_put(Interpreter &interpreter) {
   pop_integer(interpreter, index);
   // TODO: throw new Error("Invalid index type for builtin JAVA_ARRAYGET");
 
-  auto arr = dynamic_cast<ArrayObject *>(interpreter.pop());
-  assert(arr != nullptr);
+  auto obj = interpreter.pop();
+  auto arr = obj.cast<ArrayObject>();
 
   arr->set(index, interpreter.get_acc());
 
   // Acc stays same value
+}
+
+void writeln(Interpreter &interpreter) {
+  auto val = interpreter.get_acc().cast<StringObject>();
+
+  std::cout << val->val() << std::endl;
 }

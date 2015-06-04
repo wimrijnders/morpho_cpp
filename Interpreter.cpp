@@ -5,7 +5,7 @@ static Error incorrect_number_arguments_error;
 
 
 void Interpreter::callClosure(int narg) {
-	Closure *c = (Closure *) get_arg(narg);
+	Closure *c = get_arg(narg).cast<Closure>();
 	assert(c != nullptr);
 
 	if(narg != c->narg()) {
@@ -26,7 +26,8 @@ void Interpreter::callClosure(int narg) {
 	push_return_continuation(narg + 1);
 
 	m_pc   = c->getPC();
+	m_pc--;  //Adjust for pc increment.
 	m_code = c->code();
-	fixStackForClosureCall(m_accumulator.get(), c->stack(),c->narg());
+	fixStackForClosureCall(m_accumulator, c->stack(),c->narg());
 }
 

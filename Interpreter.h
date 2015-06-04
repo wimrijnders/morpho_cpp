@@ -30,7 +30,7 @@ private:
 
 	// NOTE: the accumulator is the first argument (index 0) when making a call.
 	//       Acc value is pushed as last on the variables stack when nargs >= 1.
-	std::unique_ptr<AnyObject> m_accumulator;
+	ObjectRef m_accumulator;
 
 	bool m_dead{true};
 
@@ -76,7 +76,8 @@ public:
 		m_dead = rhs.m_dead;
 	}
 
-	Interpreter(Interpreter &&rhs) /* : Interpreter() */ {
+
+	Interpreter(Interpreter &&rhs){
 		Interpreter::swap(*this, rhs);
 	}
 
@@ -89,14 +90,26 @@ public:
 		m_code = nullptr;
 	}
 
-	AnyObject *get_acc() {
-		return m_accumulator.get();
+	ObjectRef &get_acc() {
+		return m_accumulator;
 	}
 
 	void set_acc(AnyObject *obj) {
-		m_accumulator.reset(obj);
+		if (obj == nullptr) {
+			m_accumulator.reset();
+		} else {
+			// Copy of the object for the pedantic case
+			// that source (operation) disappears while the object
+			// is still used.
+			m_accumulator.reset(obj->clone());
+
+		}
+
 	}
 
+	void set_acc(ObjectRef &obj) {
+		m_accumulator = obj;
+	}
 
 
  /**
@@ -122,7 +135,7 @@ public:
 		push_return_continuation(narg);
 		jump_relative(offset);
 
-		fixStackForCall(m_accumulator.get(), nenv,narg);
+		fixStackForCall(m_accumulator, nenv,narg);
 	}
 
 	/**
@@ -133,11 +146,12 @@ public:
 	void become(int offset, int nenv, int narg) {
 		jump_relative(offset);
 
-		fixStackForCall(m_accumulator.get(), nenv,narg);
+		fixStackForCall(m_accumulator, nenv,narg);
 	}
 
+
 	void doFetch(int pos) {
-		m_accumulator.reset(fetch(pos));
+		m_accumulator = fetch(pos);
 	}
 
 
@@ -145,7 +159,7 @@ public:
    * @brief Push value of accumulator on the stack
    */
   void push() {
-    Continuation::push(m_accumulator.get());
+    Continuation::push(m_accumulator /*.get() */);
   }
 
 
@@ -171,6 +185,7 @@ public:
 		m_dead = !call_ret();
 	}
 
+
 	bool is_dead() {
 		return m_dead;
 	}
@@ -181,7 +196,6 @@ public:
 	 */
 	void loop() {
 		assert(m_code != nullptr);
-		
 
 		while(true) {
 			(*m_code)[m_pc]->execute(*this);
@@ -201,11 +215,11 @@ public:
 	}
 
 
-	AnyObject *get_arg(int narg) {
-		AnyObject *tmp = nullptr;
+	ObjectRef get_arg(int narg) {
+		ObjectRef tmp;
 
 		if(narg == 0) {
-			tmp = m_accumulator.get();
+			tmp = m_accumulator;
 		} else {
 				tmp = stack().get_arg(narg);
 		}

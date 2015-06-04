@@ -12,14 +12,14 @@
 class Closure : public CallContext, public AnyObject, public RunContext {
 public:
 
-  Closure(lib_func &func, const StackLink &env, int nenv, int narg) :
+  Closure(lib_func &func, const Stack &env, int nenv, int narg) :
     CallContext(func, narg, nenv)
   {
     set_stack(env);
   }
 
 
-  Closure(int pc, const StackLink &env, int nenv, int narg, OperationArray *code) :
+  Closure(int pc, const Stack &env, int nenv, int narg, OperationArray *code) :
     CallContext(0, narg, nenv)  // NOTE: first param 'offset' not used
   {
     m_pc = pc;

@@ -13,48 +13,25 @@
  * The list is operated as an inverted stack, for reasons
  * of efficiency. It's better to push/pop at the end.
  */
-class StackLink {
-  using VarList = std::vector<AnyObject *>;
+class Stack {
+  using VarList = std::vector<ObjectRef>;
 private:
   VarList m_variables;
 
 public:
-  StackLink() = default;
+  Stack() = default;
 
-  StackLink(const StackLink &rhs) {
+  Stack(const Stack &rhs) {
     // Copy all items
     m_variables.clear();
 
-    for (AnyObject *it : rhs.m_variables) {
-      m_variables.push_back(it->clone());
+    for (auto &it : rhs.m_variables) {
+      m_variables.push_back(it);
     }
   }
 
-  ~StackLink() {
-    // Remove all items
-    for (AnyObject *it : m_variables) {
-      delete it;
-    }
-
-    m_variables.clear();
-  }
-
-
-  /**
-   * @brief Empty the stack without deleting all the items.
-   *
-   * The items should have been moved beforehand to another continuation
-   */
-  void clear() {
-    m_variables.clear();
-  }
-
-  void push(AnyObject *obj) {
-    AnyObject *tmp = nullptr;
-    if (obj != nullptr) {
-      tmp = obj->clone();
-    }
-    m_variables.push_back(tmp);
+  void push(ObjectRef &obj) {
+    m_variables.push_back(obj);
   }
 
   /**
@@ -73,10 +50,11 @@ public:
     }
   }
 
+
 	/**
 	 * @brief Remove and return the first item on the stack
 	 */
-	AnyObject *pop() {
+	ObjectRef pop() {
 		assert(!m_variables.empty());
 
 		auto tmp = m_variables.back();
@@ -86,15 +64,16 @@ public:
   }
 
 
-  StackLink get_env(int nenv) const{
-    StackLink tmp;
+  Stack get_env(int nenv) const{
+    Stack tmp;
 
 		if (nenv > 0) {
-			std::copy(m_variables.begin(), m_variables.begin() + nenv, tmp.m_variables.begin());
+			tmp.m_variables.insert(tmp.m_variables.end(), m_variables.begin(), m_variables.begin() + nenv);
 		};
 
     return tmp;
   }
+
 
 	/**
 	 * @brief Prepares the stack for entering a called function.
@@ -116,13 +95,13 @@ public:
 	 * the value of the accumulator topmost and the others below
 	 * in order.
 	 */
-	void fixStackForCall(AnyObject *acc, int nenv, int narg) {
+	void fixStackForCall(ObjectRef &acc, int nenv, int narg) {
 
 		// Get bottom nenv variables in stack
 		VarList vars;
 
 		if (nenv > 0) {
-			std::copy(m_variables.begin(), m_variables.begin() + nenv, vars.begin());
+			vars.insert(vars.end(), m_variables.begin(), m_variables.begin() + nenv);
 		};
 
 		// Get the parameters that we want at the 'top' of the stack.
@@ -132,20 +111,19 @@ public:
 
 		// The acc value is the topmost value on the stack.
 		if (narg  > 0) {
-			vars.push_back(acc->clone());
+			vars.push_back(acc);
 		}
 
 		m_variables = vars;
 	}
 
 
-	void fixStackForClosureCall(AnyObject *acc, StackLink &env, int narg) {
+	void fixStackForClosureCall(ObjectRef &acc, Stack &env, int narg) {
 
-		// Get bottom nenv variables in stack
 		VarList vars;
 
 		// Use passed StackLink instance as environment variables.
-		std::copy(env.m_variables.begin(), env.m_variables.end(), vars.begin());
+		vars.insert(vars.end(), env.m_variables.begin(), env.m_variables.end());
 
 		// Get the parameters that we want at the 'top' of the stack.
 		if( (narg -1) > 0 ) {
@@ -154,7 +132,7 @@ public:
 
 		// The acc value is the topmost value on the stack.
 		if (narg  > 0) {
-			vars.push_back(acc->clone());
+			vars.push_back(acc);
 		}
 
 		m_variables = vars;
@@ -168,9 +146,8 @@ public:
 	 * implementation they are in the correct order.
 	 *
 	 */
-	AnyObject *fetch(int pos) {
-		return m_variables[pos]->clone();
-		//return m_variables[m_variables.size() -1 - pos]->clone();
+	ObjectRef &fetch(int pos) {
+		return m_variables[pos]; //.clone();
 	}
 
 
@@ -184,18 +161,10 @@ public:
 	 * before you write to it.
 	 *
 	 */
-	void store(AnyObject *obj, int pos) {
-		if (m_variables[pos] != nullptr) {
-			delete m_variables[pos];
-		}
+	void store(ObjectRef &obj, int pos) {
+		assert(obj.get() != nullptr); // Not sure if this is allowed to happen
 
-		if (obj != nullptr) {
-			m_variables[pos] = obj->clone();
-		} else {
-			// Not sure if this is allowed to happen
-			assert(false);
-			m_variables[pos] = nullptr;
-		}
+		m_variables[pos] = obj;
 	}
 
 
@@ -206,10 +175,10 @@ public:
 	 * need to access from the back.
 	 *
 	 */
-	AnyObject *get_arg(int pos) {
+	ObjectRef &get_arg(int pos) {
 		assert(pos > 0); // value 0 is the accumulator
 
-		return m_variables[m_variables.size() - pos ]->clone();
+		return m_variables[m_variables.size() - pos ];
 	}
 };
 

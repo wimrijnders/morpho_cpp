@@ -26,9 +26,7 @@ private:
 			set_done();
 
 			// WRI DEBUG
-			IntObject *obj = dynamic_cast<IntObject *>(get_acc());
-			assert(obj != nullptr);
-			cout << "Fiber done; acc: "  << obj->val() << endl;
+			cout << "Fiber done; acc: "  << get_acc()->dump() << endl;
 		}
 	}
 

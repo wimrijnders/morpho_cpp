@@ -1,7 +1,7 @@
 #ifndef MAKECLOSURE_H
 #define MAKECLOSURE_H
 #include <cassert>
-#include "../StackLink.h"
+#include "../Stack.h"
 #include "../Closure.h"
 #include "../common/Operation.h"
 
@@ -48,7 +48,7 @@ public:
 
 
 	void execute(Interpreter &interpreter)	{
-		StackLink env = interpreter.getEnvironment(m_nenv);
+		auto env = interpreter.getEnvironment(m_nenv);
 
 		if (m_func != nullptr) {
 			assert(m_fun_offset == 0);

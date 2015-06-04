@@ -12,14 +12,14 @@ public:
 		m_val(new IntObject(val))
 	{}
 
+	explicit MakeVal(bool val) :
+		m_val(new BoolObject(val))
+	{}
+
 	/**
 	 * @brief Explicit nullptr parameter to avoid ambiguity
 	 */
 	explicit MakeVal(std::nullptr_t val = nullptr) :
-		m_val(val)
-	{}
-
-	explicit MakeVal(AnyObject *val) :
 		m_val(val)
 	{}
 

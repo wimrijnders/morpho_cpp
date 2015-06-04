@@ -19,24 +19,6 @@
 
 class Interpreter;
 
-/**
- * @brief Put obj in the accumulator and return from current method.
- *
- * This is a (perhaps) temporary convenience function to facilitate
- * dealing with operations handling two integer values.
- *
- * NOTE: This function should not be externally callable!
- *
- */
-#if 0
-void return_acc(Interpreter &interpreter, AnyObject *obj) {
-  assert(obj);
-
-  // return value in accumulator
-  interpreter.set_acc(obj);
-  interpreter.ret();
-}
-#endif
 
 void set_acc(Interpreter &interpreter, int val);
 
@@ -49,6 +31,7 @@ void add(Interpreter &interpreter);
 void makeArray(Interpreter &interpreter);
 void array_get(Interpreter &interpreter);
 void array_put(Interpreter &interpreter);
+void writeln(Interpreter &interpreter);
 
 
 #endif //LIBRARY_FUNCTIONS_H

@@ -2,13 +2,13 @@
 #define RUNCONTEXT_H
 #include <cassert>
 #include <memory>  // swap()
-#include "StackLink.h"
+#include "Stack.h"
 #include "common/Operation.h"
 
 class RunContext {
 private:
 
-	StackLink m_stack;
+	Stack m_stack;
 
 protected:
 	OperationArray *m_code{nullptr};
@@ -26,37 +26,34 @@ protected:
     swap(first.m_pc, second.m_pc);
   }
 
-	void disconnect() {
-		m_stack.clear();
-	}
 
-  void set_stack(const StackLink &stack) {
+  void set_stack(const Stack &stack) {
     m_stack = stack;
   }
 
-  void fixStackForCall(AnyObject *acc, int nenv, int narg) {
+
+  void fixStackForCall(ObjectRef &acc, int nenv, int narg) {
     m_stack.fixStackForCall(acc, nenv, narg);
   }
 
-	void fixStackForClosureCall(AnyObject *acc, StackLink &env, int narg ) {
+
+	void fixStackForClosureCall(ObjectRef &acc, Stack &env, int narg ) {
 
 		m_stack.fixStackForClosureCall(acc, env, narg);
 	}
 
-	AnyObject *fetch(int pos) {
+	ObjectRef &fetch(int pos) {
 		return m_stack.fetch(pos);
 	}
 
 
-
-  void push(AnyObject *obj) {
+  void push(ObjectRef &obj) {
     m_stack.push(obj);
   }
 
-
 public:
 
-	void store(AnyObject *obj, int pos) {
+	void store(ObjectRef &obj, int pos) {
 		m_stack.store(obj, pos);
 	}
 
@@ -67,17 +64,22 @@ public:
     }
   }
 
-  AnyObject *pop() {
+
+  ObjectRef pop() {
     return m_stack.pop();
   }
 
-  StackLink &stack() { return m_stack; }
 
-	StackLink getEnvironment(int nenv) const {
+	Stack &stack() { return m_stack; }
+
+
+	Stack getEnvironment(int nenv) const {
 		return m_stack.get_env(nenv);
 	}
 
+
 	OperationArray *code() { return m_code; }
+
 
 	void jump_relative(int target) {
 		int new_pc = m_pc + target;

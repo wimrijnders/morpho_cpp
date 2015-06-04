@@ -117,12 +117,9 @@ public:
 
 	void execute(Interpreter &interpreter) override {
 		// Test acc for false
-		AnyObject *var = interpreter.get_acc();
-		assert(var != nullptr);
-		BoolObject *ret = dynamic_cast<BoolObject *>(var);
-		assert(ret != nullptr);
+		auto val = interpreter.get_acc().cast<BoolObject>();
 
-		if (ret->val() == false) {
+		if (val->val() == false) {
 			interpreter.drop(m_drops);
 			interpreter.jump_relative(m_target);
 		}
@@ -142,12 +139,9 @@ public:
 
 	void execute(Interpreter &interpreter) override {
 		// Test acc for true
-		AnyObject *var = interpreter.get_acc();
-		assert(var != nullptr);
-		BoolObject *ret = dynamic_cast<BoolObject *>(var);
-		assert(ret != nullptr);
+		auto val = interpreter.get_acc().cast<BoolObject>();
 
-		if (ret->val() == true) {
+		if (val->val() == true) {
 			interpreter.drop(m_drops);
 			interpreter.jump_relative(m_target);
 		}

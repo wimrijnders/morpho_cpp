@@ -29,7 +29,7 @@ protected:
 		m_ret = nullptr;
 		m_ex = nullptr;
 
-		RunContext::disconnect();
+		//RunContext::disconnect();
 	}
 
   /**
@@ -55,14 +55,6 @@ protected:
 	 */
 	Continuation *clone(int narg = 0) {
 		Continuation *tmp = new Continuation(*this);
-
-    /*
-    tmp.m_code  = m_code;  // pointer copy
-    tmp.m_pc    = m_pc;
-    tmp.m_stack = m_stack;
-    tmp.m_ret   = m_ret;   // pointer copy
-    tmp.m_ex    = m_ex;    // pointer copy
-    */
 
     // Note that one less than narg is stored.
     // This is analogous to java code; apparently, the acc

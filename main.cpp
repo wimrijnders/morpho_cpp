@@ -5,12 +5,12 @@
 #include <iostream>
 #include <vector>
 #include "common/Operation.h"
-#include "StackLink.h"
+#include "Stack.h"
 #include "Continuation.h"
 #include "common/Runnable.h"
 #include "Interpreter.h"
 #include "operation/Operations.h"
-#include "library_functions.h"
+#include "builtins.h"
 #include "Task.h"
 
 // Needs to be defined before class Machine
@@ -57,7 +57,7 @@ Operation *data_closure_morpho2[] = {
 	new FetchR(2),
 // _4:
 	new Call(array_put /* #"?[?]=?[f3]" */, 3),
-	new Go(0, 1),   // ??? Offset to current pc?
+	new Go(1, 1),   // ??? Original had offset 0 and pc got stuck
 // _2:
 	new Fetch(0),
 	new Call(inc /* #"inc[f1]" */, 1),
@@ -92,24 +92,24 @@ Operation *data_closure_morpho2[] = {
 	new Call(eq /* #"==[f2]" */, 2),
 // _9:
 	new Store(4),
-	new Go(0, 1),   // ???
+	new Go(1, 1),   // ??? Original had offset 0 and pc got stuck
 // _7:
 	new Fetch(2),
 	new Call(inc /* #"inc[f1]" */, 1),
 	new Store(2),
-	new Go(24 /* _5 */),
+	new Go(-24 /* _5 */),
 // _6:
 	new Fetch(3),
 	new GoFalse(3 /* _10 */, 0),
 	new MakeVal("nested OK"),
-	new Call(0 /* #"writeln[f1]" */, 1),
+	new Call(writeln /* #"writeln[f1]" */, 1),
 // _10:
 	new Fetch(4),
 	new GoTrue(2 /* _11 */),
 	new Return(),
 // _11:
 	new MakeVal("nonnested OK"),
-	new CallR(0 /* #"writeln[f1]" */, 1),
+	new CallR(writeln /* #"writeln[f1]" */, 1),
 // ];
 // }}
 // *
