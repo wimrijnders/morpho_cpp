@@ -2,7 +2,23 @@
 #include "CallContext.h"
 
 
+bool CallContext::call_task_func(){
+	assert(m_offset == 0);
+	assert(m_func == nullptr);
+
+	if (m_task_func == nullptr) {
+		return false;
+	}
+
+	m_task_func();
+	return true;
+}
+
+
 bool CallContext::call_builtin(Interpreter &interpreter){
+	assert(m_offset == 0);
+	assert(m_task_func == nullptr);
+
 	if (m_func == nullptr) {
 		return false;
 	}
@@ -14,6 +30,9 @@ bool CallContext::call_builtin(Interpreter &interpreter){
 
 
 void CallContext::call(Interpreter &interpreter) {
+	if (call_task_func()) {
+		return;
+	}
 	if (call_builtin(interpreter)) {
 		return;
 	}

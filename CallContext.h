@@ -2,16 +2,27 @@
 #define CALLCONTEXT_H
 
 class Interpreter;
+class Task;
 
 using lib_func = void (Interpreter &);
+using task_func = void (Task &);
 
+/**
+ * @brief Call in-memory or built-in method.
+ *
+ * This class is becoming increasingly ugly; now with two
+ * different types of in-built method pointers.
+ *
+ * TODO: Find a better implementation.
+ */
 class CallContext {
-protected:
-	int m_nargs{-1};
+protected:	int m_nargs{-1};
 	int m_nenv{-1};
-	lib_func *m_func{nullptr};
-	int m_offset{0};
+	lib_func  *m_func{nullptr};
+	task_func *m_task_func{nullptr};
+	int        m_offset{0};
 
+	bool call_task_func(/* Task &task */);
 
 public:
 	/**

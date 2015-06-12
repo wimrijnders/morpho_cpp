@@ -2,7 +2,10 @@
 #define ANYOBJECT_H
 #include <typeinfo> // typeid(obj).name()
 #include <cxxabi.h> // abi::__cxa_demangle
+#include <cassert>
 #include <string>
+#include <vector>
+#include <memory>
 #include <sstream>
 
 /**

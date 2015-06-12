@@ -1,5 +1,8 @@
 #ifndef TASK_H
 #define TASK_H
+#include <iostream>
+#include "common/Runnable.h"
+#include "Interpreter.h"
 
 class Fiber: public Runnable, public Interpreter {
 private:
@@ -39,16 +42,21 @@ public:
 
 		m_state = READY;
 	}
+
+	Fiber(const FiberState &fs) :
+	 Interpreter(fs)
+	{}
 };
 
 
 class Task: public Runnable, public RunnableList<Fiber> {
 private:
-
-	// registers
+	Fiber *m_running_fiber{nullptr};  // Only set when executing a fiber
 
 	virtual bool execute_intern(Fiber &fiber) override {
+		m_running_fiber = &fiber;
 		fiber.run();
+		m_running_fiber = nullptr;
 		return true;
 	}
 
@@ -56,6 +64,7 @@ private:
 		loop();
 		set_done();
 	}
+
 public:
 	void add(const Fiber &item) {
 		RunnableList<Fiber>::add(item);
@@ -63,6 +72,23 @@ public:
 		m_state = READY;
 	}
 
+	ObjectRef pop() {
+		assert(m_running_fiber != nullptr);
+
+		return m_running_fiber->pop();
+	}
+
+	ObjectRef get_acc() {
+		assert(m_running_fiber != nullptr);
+
+		return m_running_fiber->get_acc();
+	}
+
+	void killFiber() {
+		assert(m_running_fiber != nullptr);
+
+		return m_running_fiber->set_done();
+	}
 };
 
 

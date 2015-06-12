@@ -21,6 +21,8 @@ public:
 	}
 };
 
+using CallP = OperationP<Call>;
+
 
 class CallR: public CallContext, public Operation {
 public:

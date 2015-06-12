@@ -39,12 +39,12 @@ private:
 protected:
 	State m_state{INITIALIZING};
 
-	void set_done() { m_state = DONE; }
 
 public:
 	State state() { return m_state; }
 	bool can_run() { return m_state == READY || m_state == PAUSED; }
 	bool done() { return m_state == DONE; }
+	void set_done() { m_state = DONE; }
 
 	void run() {
 		assert(m_state == READY || m_state == PAUSED);
@@ -116,6 +116,7 @@ public:
 	void add(const RunnableItem &item) {
 		m_ready.push_back(item);
 	}
+
 
 	void clear() {
 		for(auto &item : m_ready) item.clear();

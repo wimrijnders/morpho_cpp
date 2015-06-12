@@ -18,6 +18,7 @@
 ///////////////////////////////////////////////////////////////////////
 
 class Interpreter;
+class Task;
 
 
 void set_acc(Interpreter &interpreter, int val);
@@ -27,11 +28,16 @@ void eq(Interpreter &interpreter);
 void ne(Interpreter &interpreter);
 void subtract(Interpreter &interpreter);
 void inc(Interpreter &interpreter);
+void dec(Interpreter &interpreter);
 void add(Interpreter &interpreter);
 void makeArray(Interpreter &interpreter);
 void array_get(Interpreter &interpreter);
 void array_put(Interpreter &interpreter);
 void writeln(Interpreter &interpreter);
+
+void makeChannel(Interpreter &interpreter);
+void channelWrite(Interpreter &interpreter);
+void killFiber(Interpreter &interpreter);
 
 
 #endif //LIBRARY_FUNCTIONS_H

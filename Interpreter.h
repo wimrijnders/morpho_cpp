@@ -2,47 +2,25 @@
 #define INTERPRETER_H
 #include <sstream>
 #include <memory>
-#include <exception>
-#include <string>
-#include "Continuation.h"
+//#include <string>
+#include "FiberState.h"
 #include "Closure.h"
 #include "common/Operation.h"
 
 
-class Error : public std::exception {
-private:
-   std::string s;
 
-public:
-   Error() {}
-   Error(std::string ss) : s(ss) {}
-   ~Error() throw () {}
-   void msg(std::string ss) { s = ss; }
-
-   const char* what() const throw() { return s.c_str(); }
-};
-
-
-
-class Interpreter : public Continuation {
+class Interpreter : public FiberState {
 
 private:
 
-	// NOTE: the accumulator is the first argument (index 0) when making a call.
-	//       Acc value is pushed as last on the variables stack when nargs >= 1.
-	ObjectRef m_accumulator;
 
 	bool m_dead{true};
 
 
   void swap(Interpreter &first, Interpreter &second) /* nothrow */ {
-    // enable ADL (not necessary in our case, but good practice)
     using std::swap; 
 
-    // by swapping the members of two classes,
-    // the two classes are effectively swapped
-    swap(first.m_accumulator, second.m_accumulator); 
-    Continuation::swap(first, second);
+    FiberState::swap(first, second);
     swap(first.m_dead, second.m_dead);
   }
 
@@ -57,17 +35,24 @@ public:
 	}
 
 
+	Interpreter(const FiberState &fs) :
+	 FiberState(fs),
+		m_dead(false)
+	{
+		assert(m_code != nullptr);
+	}
+
+
 	~Interpreter() {
 		// Note that program pointed to (m_code) is not deleted.
 		// At time of writing, this is handled extern.
 	}
 
 
-	// Not sure about copying the m_activation_record here.
-	// But this is needed for correct compilation
+	// Needed for correct compilation.
 	Interpreter(const Interpreter &rhs) {
 		// Only allow this if not assigned yet.
-		assert(m_accumulator.get() == nullptr);
+		assert(get_acc().get() == nullptr);
 		assert(m_code == nullptr);
 
 		// assignment to acc intentionally skipped here
@@ -86,32 +71,14 @@ public:
     return *this;
 	}
 
+
 	void clear() {
 		m_code = nullptr;
 	}
 
-	ObjectRef &get_acc() {
-		return m_accumulator;
-	}
-
-	void set_acc(AnyObject *obj) {
-		if (obj == nullptr) {
-			m_accumulator.reset();
-		} else {
-			// Copy of the object for the pedantic case
-			// that source (operation) disappears while the object
-			// is still used.
-			m_accumulator.reset(obj->clone());
-
-		}
-
-	}
-
-	void set_acc(ObjectRef &obj) {
-		m_accumulator = obj;
-	}
 
 
+#if 0
  /**
   * @brief Perform absolute jump in current operations array
   *
@@ -128,44 +95,9 @@ public:
 
 		m_pc = new_pc;
 	}
-
-	void call(int offset, int nenv, int narg)	{
-		// Built-ins should be called directly, not through this method
-
-		push_return_continuation(narg);
-		jump_relative(offset);
-
-		fixStackForCall(m_accumulator, nenv,narg);
-	}
-
-	/**
-	 * @brief As call(), but doesn't push a continuation.
-	 *
-	 * Instead, it uses the current m_ret to return.
-	 */
-	void become(int offset, int nenv, int narg) {
-		jump_relative(offset);
-
-		fixStackForCall(m_accumulator, nenv,narg);
-	}
+#endif
 
 
-	void doFetch(int pos) {
-		m_accumulator = fetch(pos);
-	}
-
-
-  /**
-   * @brief Push value of accumulator on the stack
-   */
-  void push() {
-    Continuation::push(m_accumulator /*.get() */);
-  }
-
-
-	/////////////////////////////////////////////
-	// Low level support of common operations
-	/////////////////////////////////////////////
 
 	/**
 	 * @brief Return from current call.
@@ -212,19 +144,6 @@ public:
 				break;
 			}
 		}
-	}
-
-
-	ObjectRef get_arg(int narg) {
-		ObjectRef tmp;
-
-		if(narg == 0) {
-			tmp = m_accumulator;
-		} else {
-				tmp = stack().get_arg(narg);
-		}
-
-		return tmp;
 	}
 
 

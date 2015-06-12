@@ -1,5 +1,6 @@
 #include <iostream>
 #include "builtins.h"
+#include "Channel.h"
 #include "Interpreter.h"
 
 
@@ -100,6 +101,13 @@ void inc(Interpreter &interpreter) {
 	set_acc(interpreter, int1 + 1);
 }
 
+void dec(Interpreter &interpreter) {
+	int int1;
+	get_integer(interpreter, int1);
+
+	set_acc(interpreter, int1 - 1);
+}
+
 
 void add(Interpreter &interpreter) {
 	int int1, int2;
@@ -145,4 +153,44 @@ void writeln(Interpreter &interpreter) {
   auto val = interpreter.get_acc().cast<StringObject>();
 
   std::cout << val->val() << std::endl;
+}
+
+
+///////////////////////////////////////////
+// Channels
+///////////////////////////////////////////
+
+void makeChannel(Interpreter &interpreter) {
+	interpreter.set_acc(new Channel);
+}
+
+
+/**
+ * @brief channelWrite
+ *
+ * TODO: All the other built-ins take an Interpreter instance
+ *       as parameter. Make this uniform.
+ */
+void channelWrite(Task &t) {
+	ObjectRef channel = t.pop();
+	auto c  = channel.cast<Channel>();
+
+	// acc contains value to write
+	ObjectRef val = t.get_acc();
+
+	if(c->tryToWrite(val)) {
+		c->kickReadersAndWriters();
+		return;
+	}
+	c->addWriter(t);
+	//TODO: interpreter.exceptional = KILLFIBER;
+}
+
+
+void killFiber(Interpreter &interpreter) {
+	// TODO: UGLY! Fix this.
+	Task *t = static_cast<Task *>(&interpreter);
+	assert(t != nullptr);
+
+	t->killFiber();
 }

@@ -1,5 +1,13 @@
 #ifndef MACHINE_H
 #define MACHINE_H
+#include <atomic>
+#include <thread>
+#include <vector>
+#include "Task.h"
+
+// Needs to be defined before class Machine
+const int NUM_WORKER_THREADS = 0;
+
 
 class Thread {
 private:
@@ -67,7 +75,7 @@ public:
  */
 class Machine: public RunnableList<Task> {
 private:
-	ThreadPool           m_thread_pool;
+	ThreadPool m_thread_pool;
 
 	bool execute_intern(Task &process) override {
 		if (NUM_WORKER_THREADS > 0) {
