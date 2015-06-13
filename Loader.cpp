@@ -1,12 +1,14 @@
 #include <cassert>
 #include <iostream>
 #include "Error.h"
+#include "builtins.h"
 #include "Loader.h"
 
 using namespace std;
 
 Error invalid_file("Invalid Morpho executable file");
-
+Error unknown_typecode("Unknown typecode encountered on load");
+Error unknown_builtin("Call to unknown builtin encountered on load");
 
 Loader::Loader() {
 }
@@ -57,17 +59,111 @@ char Loader::read_char(std::ifstream &file) {
 }
 
 
-void Loader::read_operation(std::ifstream &file) {
-	string name = read_string(file);
+double Loader::read_double(std::ifstream &file) {
+  char out[8];
 
-	cout << "op: " << name << endl;
-	/*
-	Operation op = Operations.createOp(name);
-	int n=op.argCount();
-	for( int i=0 ; i!=n ; i++ )
-		op.setArg(i,loadObject());
-	return op;
-	*/
+  // Here's hoping that the float layout corresponds to a
+  // C++ float
+  file.read(out, 8);
+
+  return *((double *) out);
+}
+
+
+
+void Loader::read_operation(std::ifstream &file) {
+  const unsigned MIN_SIZE    = 10;
+  const unsigned TOP_BUILTIN = 3294967296;
+  const unsigned NUM_BUILTIN = 113;
+
+  auto has_prefix = [] (string &argument, string prefix) -> bool {
+    return (argument.substr(0, prefix.size()) == prefix);
+  };
+
+  auto is_call = [&has_prefix] (string &argument) -> bool {
+    return has_prefix(argument, "Call") || has_prefix(argument, "Go");
+  };
+
+  string name = read_string(file);
+
+	int pad = 0;
+	if (name.length() < MIN_SIZE) {
+		pad = MIN_SIZE - name.length();
+	}
+
+	cout << file.tellg() << ":  " << name << " ";
+	for (int i = 0; i < pad; ++i) {
+		cout << " ";
+	}
+	cout << " ";
+
+
+	// We derive the number of arguments from the name
+	if (name[name.length() - 2] == '/') {
+		int num_args = name[name.length() - 1] - '0';
+
+		auto sep = [&cout] (int i) {
+			if (i != 0) {
+				cout << ", ";
+			}
+		};
+
+		for (int i = 0; i < num_args; ++i) {
+			int tc = read_char(file);
+
+			switch (tc) {
+			case TC_INT:
+			{
+				unsigned val = read_uint(file, 4);
+
+				sep(i);
+				if (i == 0 && is_call(name)) {
+					if ( TOP_BUILTIN  - NUM_BUILTIN < val &&  val <= TOP_BUILTIN) {
+						int index = TOP_BUILTIN - val;
+						//cout << "builtin_" << (TOP_BUILTIN - val);
+						try {
+							cout << "_" << builtins.at(index);
+						} catch(...) {
+							cout << "FATAL: no builtin with index " << index << endl;
+							throw unknown_builtin;
+						}
+					} else {
+						cout << "_" << (int) val;
+					}
+				} else {
+					cout << val;
+				}
+			}
+				break;
+			case TC_STRING:
+				sep(i);
+				cout << "\"" << read_string(file) << "\"";
+				break;
+			case TC_DOUBLE:
+				sep(i);
+				cout << read_double(file);
+				break;
+			case TC_TRUE:
+				sep(i);
+				cout << "true";
+				break;
+			case TC_FALSE:
+				sep(i);
+				cout << "false";
+				break;
+			case TC_NULL:
+				sep(i);
+				cout << "null";
+				break;
+			default:
+				cout << "Error: Unknown type code " << tc << endl;
+				throw unknown_typecode;
+			}
+
+		}
+	}
+
+	cout << endl;
 }
 
 
@@ -98,12 +194,12 @@ void Loader::load(std::string filename) {
 		unsigned pc   = read_uint(file, 4);
 		unsigned size = read_uint(file, 4);
 
-		cout << "pc: " << pc << ", size: " << size << endl;
+		cout << "pc: " << pc << ", size: " << size << endl << endl;
 
 		//code = new Operation[n];
 		for (unsigned i = 0; i != size; i++ ) {
 			char typecode = read_char(file);
-			if( typecode == -128 ) {
+			if( typecode == TC_OPERATION ) {
 				/* code[i] = */ read_operation(file);
 			}	else {
 				cout << "int: " << read_uint(file, 4) << endl;
@@ -111,7 +207,7 @@ void Loader::load(std::string filename) {
 
 			}
 
-			if (i == 10) break;
+			if (i == 100) break;
 		}
 
 

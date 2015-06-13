@@ -3,6 +3,58 @@
 #include "Channel.h"
 #include "Interpreter.h"
 
+std::map<int, std::string> builtins = {
+  { 1, "writeln"},
+  { 3, "subtract"},
+  { 4, "add"},
+  { 7, "<="},
+  { 9, "=="},
+  {10, "!="},
+  {20, "killFiber"},
+  {22, "array_get"},
+  {23, "array_put"},
+  {25, "makeArray"},
+  {32, "makeChannel"},
+  {39, "exit"},
+  {41, "inc"},
+  {42, "dec"},
+  {61, "channelWrite"},
+
+  // Following not implemented yet
+  { 2, "!<"},
+  { 5, "!killMachine"},
+  { 6, "!>"},
+  { 8, "!>="},
+  {11, "!mul"},
+  {12, "!div"},
+  {15, "!concat"},
+  {16, "!head"},
+  {17, "!tail"},
+  {18, "!cons"},
+  {19, "!killTask"},
+  {21, "!write"},
+  {29, "!isPair"},
+  {31, "!setTail"},
+  {33, "!byte"},
+  {34, "!short"},
+  {35, "!int"},
+  {36, "!long"},
+  {38, "!double"},
+  {43, "!neg"},
+  {44, "!char"},
+  {57, "!isChannelClosed"},
+  {58, "!channelEOF"},
+  {60, "!channelRead"},
+  {64, "!force"},
+  {65, "!isInstanceOf"},
+  {72, "!isBoolean"},
+  {74, "!makeFiber"},
+  {75, "!startFiber"},
+  {76, "!startTask"},
+  {77, "!startMachine"},
+  {81, "!getExceptionTrace"},
+};
+
 
 static void get_integer(Interpreter &interpreter, int &out_int) {
   auto val = dynamic_cast<IntObject *>(interpreter.get_acc().get());

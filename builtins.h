@@ -5,6 +5,12 @@
  */
 #ifndef LIBRARY_FUNCTIONS_H
 #define LIBRARY_FUNCTIONS_H
+#include <map>
+#include <string>
+
+extern std::map<int, std::string> builtins;
+
+
 
 ///////////////////////////////////////////////////////////////////////
 // Built-in functions.

@@ -15,6 +15,8 @@
  *
  * ...and then read in the generated file.
  *
+ * Source: http://unix.stackexchange.com/a/49066
+ *
  */
 
 class Loader {
@@ -23,12 +25,22 @@ private:
     MAGIC = 1234567890,
     MAJORVERSION = 2,
     MINORVERSION = 0,
-    BUILDVERSION = 0
+    BUILDVERSION = 0,
+
+    // TC prefix stands for 'typecode'
+    TC_OPERATION = -128,
+    TC_INT       = 0,
+    TC_STRING    = 2,
+    TC_DOUBLE    = 5,
+    TC_TRUE      = 8,
+    TC_FALSE     = 9,
+    TC_NULL      = 10
   };
 
   unsigned    read_uint(std::ifstream &file, int size);
   std::string read_string(std::ifstream &file);
   char        read_char(std::ifstream &file);
+  double      read_double(std::ifstream &file);
   void        read_operation(std::ifstream &file);
 
 public:
