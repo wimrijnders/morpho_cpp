@@ -9,6 +9,7 @@
 #include "Continuation.h"
 #include "operation/Operations.h"
 #include "builtins.h"
+#include "Loader.h"
 #include "Machine.h"
 
 using std::cout;
@@ -30,6 +31,10 @@ OperationArray example(data_closure_morpho2);
 //////////////////////////
 
 int main(int argc, char *argv[]) {
+	Loader loader;
+	loader.load("/home/wim/projects/try/morpho/morphodist/closures.out");
+	return 0;
+
 	Machine machine;
 
 	// load program here

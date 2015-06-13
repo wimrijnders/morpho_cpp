@@ -19,7 +19,17 @@
 
 class Loader {
 private:
-  unsigned read_uint32(std::ifstream &file);
+  enum {
+    MAGIC = 1234567890,
+    MAJORVERSION = 2,
+    MINORVERSION = 0,
+    BUILDVERSION = 0
+  };
+
+  unsigned    read_uint(std::ifstream &file, int size);
+  std::string read_string(std::ifstream &file);
+  char        read_char(std::ifstream &file);
+  void        read_operation(std::ifstream &file);
 
 public:
   Loader();

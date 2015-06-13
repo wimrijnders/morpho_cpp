@@ -10,7 +10,7 @@ bool CallContext::call_task_func(){
 		return false;
 	}
 
-	m_task_func();
+	//TODO m_task_func();
 	return true;
 }
 

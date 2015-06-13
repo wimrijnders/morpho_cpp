@@ -188,9 +188,9 @@ void channelWrite(Task &t) {
 
 
 void killFiber(Interpreter &interpreter) {
-	// TODO: UGLY! Fix this.
-	Task *t = static_cast<Task *>(&interpreter);
-	assert(t != nullptr);
+	// TODO: Not working and UGLY! Fix this.
+	//Task *t = static_cast<Task *>(&interpreter);
+	//assert(t != nullptr);
 
-	t->killFiber();
+	//t->killFiber();
 }
