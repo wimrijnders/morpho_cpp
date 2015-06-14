@@ -39,6 +39,7 @@ void add(Interpreter &interpreter);
 void makeArray(Interpreter &interpreter);
 void array_get(Interpreter &interpreter);
 void array_put(Interpreter &interpreter);
+void write(Interpreter &interpreter);
 void writeln(Interpreter &interpreter);
 
 void makeChannel(Interpreter &interpreter);

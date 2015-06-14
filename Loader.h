@@ -44,7 +44,7 @@ private:
   double      read_double(std::ifstream &file);
   void        read_operation(std::ifstream &file);
 
-  void load(std::ifstream &file);
+  bool load(std::ifstream &file);
 
   /**
    * @brief Representation of assembly code, for display purposes.

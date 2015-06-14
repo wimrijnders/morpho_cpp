@@ -74,14 +74,14 @@ Operation *data_closure_morpho2[] = {
 	new Fetch(3),
 	new GoFalse(3 /* _10 */, 0),
 	new MakeVal("nested OK"),
-	new Call(writeln /* #"writeln[f1]" */, 1),
+	new Call(write /* #"writeln[f1]" */, 1),
 // _10:
 	new Fetch(4),
 	new GoTrue(2 /* _11 */),
 	new Return(),
 // _11:
 	new MakeVal("nonnested OK"),
-	new CallR(writeln /* #"writeln[f1]" */, 1),
+	new CallR(write /* #"writeln[f1]" */, 1),
 // ];
 // }}
 // *

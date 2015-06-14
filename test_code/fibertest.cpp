@@ -29,7 +29,7 @@ Operation *data_tasktest_morpho2[] = {
   new Call(0 /* #"++[f2]" */, 2),
   new MakeValP(" fibers..."),
   new Call(0 /* #"++[f2]" */, 2),
-  new Call(writeln /* #"writeln[f1]" */, 1),
+  new Call(write /* #"writeln[f1]" */, 1),
   new MakeVal(0),
   new Store(0),
 //_4:
@@ -62,7 +62,7 @@ Operation *data_tasktest_morpho2[] = {
   new Call(0 /* #"++[f2]" */, 2),
   new MakeValP(" fibers..."),
   new Call(0 /* #"++[f2]" */, 2),
-  new Call(writeln /* #"writeln[f1]" */, 1),
+  new Call(write /* #"writeln[f1]" */, 1),
 //_7:
   new Fetch(1),
   new MakeValP(0),
@@ -78,7 +78,7 @@ Operation *data_tasktest_morpho2[] = {
   new Go(9 /* _7 */),
 //_8:
   new MakeVal("Done, it works!"),
-  new CallR(writeln /* #"writeln[f1]" */, 1),
+  new CallR(write /* #"writeln[f1]" */, 1),
 //];
 //}}
 //*

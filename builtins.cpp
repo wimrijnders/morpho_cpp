@@ -11,6 +11,7 @@ std::map<int, std::string> builtins = {
   { 9, "=="},
   {10, "!="},
   {20, "killFiber"},
+  {21, "write"},
   {22, "array_get"},
   {23, "array_put"},
   {25, "makeArray"},
@@ -32,7 +33,6 @@ std::map<int, std::string> builtins = {
   {17, "!tail"},
   {18, "!cons"},
   {19, "!killTask"},
-  {21, "!write"},
   {29, "!isPair"},
   {31, "!setTail"},
   {33, "!byte"},
@@ -201,10 +201,24 @@ void array_put(Interpreter &interpreter) {
   // Acc stays same value
 }
 
-void writeln(Interpreter &interpreter) {
+
+/**
+ * @brief Output given string to stdout.
+ *
+ * Should be without endline, which we leave in for now
+ */
+void write(Interpreter &interpreter) {
   auto val = interpreter.get_acc().cast<StringObject>();
 
   std::cout << val->val() << std::endl;
+}
+
+
+/**
+ * @brief Just output a new line, nothing else....
+ */
+void writeln(Interpreter &interpreter) {
+  std::cout << std::endl;
 }
 
 

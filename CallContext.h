@@ -16,7 +16,8 @@ using task_func = void (Task &);
  * TODO: Find a better implementation.
  */
 class CallContext {
-protected:	int m_nargs{-1};
+protected:
+	int m_nargs{-1};
 	int m_nenv{-1};
 	lib_func  *m_func{nullptr};
 	task_func *m_task_func{nullptr};

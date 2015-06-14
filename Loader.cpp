@@ -78,13 +78,20 @@ void Loader::CodeDump::display() {
   }
 
 
-
   count = 0;
   for (auto &line : m_list) {
     // Insert labels where necessary
     if ( count == labels.at(0)) {
       cout << "_" << count << ":" << endl;
       labels.erase(labels.begin());
+    }
+
+    // Following detects if we passed the actual program.
+    // If so, don't bother displaying.
+    // This is the first call in the BASIS part, which we couldn't care less about
+    if (line.m_line == "FetchFiberVar") {
+      cout << endl << "--- Detected start BASIS ---" << endl;
+      break;
     }
 
     cout /* << count << ": "  */
@@ -193,6 +200,7 @@ unsigned Loader::read_uint(std::ifstream &file, int size) {
   return out;
 }
 
+
 string Loader::read_string(std::ifstream &file) {
   string out;
   unsigned size = read_uint(file, 2);
@@ -231,9 +239,7 @@ double Loader::read_double(std::ifstream &file) {
 }
 
 
-
 void Loader::read_operation(std::ifstream &file) {
-  const unsigned MIN_SIZE    = 10;
   const unsigned TOP_BUILTIN = 3294967296;
   const unsigned NUM_BUILTIN = 113;
 
@@ -250,30 +256,20 @@ void Loader::read_operation(std::ifstream &file) {
 
   string name = read_string(file);
 
-	int pad = 0;
-	if (name.length() < MIN_SIZE) {
-		pad = MIN_SIZE - name.length();
-	}
-
-	buf /* << file.tellg() << ":  " */
-			<< name << " ";
-
-	for (int i = 0; i < pad; ++i) {
-		buf << " ";
-	}
-	buf << " ";
 
 
 	// We derive the number of arguments from the name
+	int num_args = 0;
 	if (name[name.length() - 2] == '/') {
-		int num_args = name[name.length() - 1] - '0';
+		num_args = name[name.length() - 1] - '0';
 
-		//auto sep = [&buf] (int i) {
-		//	if (i != 0) {
-		//		buf << ", ";
-		//	}
-		//};
+		// Also remove arg count from name
+		name.resize(name.length() - 2);
+	}
 
+	buf << name;
+
+	if (num_args > 0) {
 		for (int i = 0; i < num_args; ++i) {
 			int tc = read_char(file);
 
@@ -282,59 +278,44 @@ void Loader::read_operation(std::ifstream &file) {
 			{
 				unsigned val = read_uint(file, 4);
 
-				//sep(i);
 				if (i == 0 && is_call(name)) {
 					if ( TOP_BUILTIN  - NUM_BUILTIN < val &&  val <= TOP_BUILTIN) {
 						int index = TOP_BUILTIN - val;
-						//cout << "builtin_" << (TOP_BUILTIN - val);
+
 						try {
-							//buf << "_" << builtins.at(index);
 							dump_item.param( "_" + builtins.at(index));
 						} catch(...) {
 							cout << "FATAL: no builtin with index " << index << endl;
 							throw unknown_builtin;
 						}
 					} else {
-						//buf << "_" << (int) val;
 						dump_item.param(convertInt(val));
 						dump_item.offset(val);
 					}
 				} else {
-					//buf << val;
 					dump_item.param(convertInt(val));
 				}
 			}
 				break;
 			case TC_STRING:
-				//sep(i);
-				//buf << "\"" << read_string(file) << "\"";
 				dump_item.param("\"" + read_string(file) + "\"");
 				break;
 			case TC_DOUBLE:
-				//sep(i);
-				//buf << read_double(file);
 				dump_item.param(convertDouble(read_double(file)));
 				break;
 			case TC_TRUE:
-				//sep(i);
-				//buf << "true";
 				dump_item.param("true");
 				break;
 			case TC_FALSE:
-				//sep(i);
-				//buf << "false";
 				dump_item.param("false");
 				break;
 			case TC_NULL:
-				//sep(i);
-				//buf << "null";
 				dump_item.param("null");
 				break;
 			default:
 				cout << "Error: Unknown type code " << tc << endl;
 				throw unknown_typecode;
 			}
-
 		}
 	}
 
@@ -343,65 +324,69 @@ void Loader::read_operation(std::ifstream &file) {
 }
 
 
-void Loader::load(ifstream &file) {
-    unsigned magic = read_uint(file, 4);
-    //cout << "magic: " << magic << endl;
-    if (magic != MAGIC + 1) {
-      throw invalid_file;
+/**
+ * @return true if loaded to completion, false otherwise
+ */
+bool Loader::load(ifstream &file) {
+  unsigned magic = read_uint(file, 4);
+  if (magic != MAGIC + 1) {
+    throw invalid_file;
+  }
+
+  string filetype = read_string(file);
+  if (filetype != "Morpho") {
+    throw invalid_file;
+  }
+
+  int major_version = read_uint(file, 4);
+  int minor_version = read_uint(file, 4);
+  int build_version = read_uint(file, 4);
+
+  cout << "Type: " << filetype << ", "
+       << "v. " << major_version << "." << minor_version
+       << ", build: " << build_version << endl;
+
+  unsigned pc   = read_uint(file, 4);
+  unsigned size = read_uint(file, 4);
+
+  cout << "pc: " << pc << ", size: " << size << endl << endl;
+
+  //code = new Operation[n];
+  for (unsigned i = 0; i != size; i++ ) {
+    char typecode = read_char(file);
+    if( typecode == TC_OPERATION ) {
+      /* code[i] = */ read_operation(file);
+    }	else {
+      // If you get here, the current file position is at an integer value
+      // representing an absolute operation index in the current buffer.
+      //
+      // The operation pointed to is then used for the current operation.
+      // This, of course, is a java artefact.
+      //
+      // TODO: Devise scheme to make this work in C++
+      //
+      int val = read_uint(file, 4);
+
+      m_code_dump.copy(val);
+
     }
 
-    string filetype = read_string(file);
-    if (filetype != "Morpho") {
-      throw invalid_file;
-    }
+    if (i == 100) return true;
+  }
 
-    int major_version = read_uint(file, 4);
-    int minor_version = read_uint(file, 4);
-    int build_version = read_uint(file, 4);
-
-    cout << "Type: " << filetype << ", "
-         << "v. " << major_version << "." << minor_version
-         << ", build: " << build_version << endl;
-
-		unsigned pc   = read_uint(file, 4);
-		unsigned size = read_uint(file, 4);
-
-		cout << "pc: " << pc << ", size: " << size << endl << endl;
-
-		//code = new Operation[n];
-		for (unsigned i = 0; i != size; i++ ) {
-			char typecode = read_char(file);
-			if( typecode == TC_OPERATION ) {
-				/* code[i] = */ read_operation(file);
-			}	else {
-				// If you get here, the current file position is at an integer value
-				// representing an absolute operation index in the current buffer.
-				//
-				// The operation pointed to is then used for the current operation.
-				// This, of course, is a java artefact.
-				//
-				// TODO: Devise scheme to make this work in C++
-				//
-				int val = read_uint(file, 4);
-
-				m_code_dump.copy(val);
-
-			}
-
-			//if (i == 100) break;
-		}
+  return false;
 }
 
 
 void Loader::load(std::string filename) {
   ifstream file (filename, ios::in|ios::binary);
   if (file.is_open()) {
-    load(file);
+    bool done = load(file);
 
     m_code_dump.display();
 
     // file should be at end now
-    if (!file.eof()) {
+    if (!done && !file.eof()) {
       // Apparently, inflated output is padded with zeroes
 
       char tmp;
@@ -422,8 +407,7 @@ void Loader::load(std::string filename) {
     }
 
     file.close();
-  }
-  else {
+  } else {
     cout << "Unable to open file '" << filename  << "'." << endl;
   }
 }

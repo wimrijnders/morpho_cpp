@@ -30,9 +30,11 @@ bool CallContext::call_builtin(Interpreter &interpreter){
 
 
 void CallContext::call(Interpreter &interpreter) {
-	if (call_task_func()) {
-		return;
-	}
+	// TODO: fix or clean up
+	//if (call_task_func()) {
+	//	return;
+	//}
+
 	if (call_builtin(interpreter)) {
 		return;
 	}
