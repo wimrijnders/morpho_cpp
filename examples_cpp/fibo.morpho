@@ -1,0 +1,46 @@
+"fibo.mexe" = main in
+!
+{{
+;;;main =
+;;;	fun()
+;;;	{
+;;;		try
+;;;		{
+;;;			var n;
+;;;			n = "java.lang.Integer".##parseInt(("java.lang.String")getArgs()[1]);
+;;;			writeln(format("Input: %d", n));
+;;;			var res = fibo(n);
+;;;			writeln(format("Result: %d", res));
+;;;		}
+;;;		catch(e)
+;;;		{
+;;;			printExceptionTrace(e);
+;;;		};
+;;;	};
+
+main =
+	fun()
+	{
+		;;;var n = 10;
+		;;;writeln(format("Input: %d", n));
+		var res = fibo(10);
+		;;;writeln(format("Result: %d", res));
+	};
+
+fibo =
+	fun(n)
+	{
+		if( n<=2 )
+		{
+			return 1;
+		}
+		else
+		{
+			return fibo(n-1)+fibo(n-2);
+		};
+	};
+
+}}
+*
+BASIS
+;

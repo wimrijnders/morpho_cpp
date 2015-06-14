@@ -1,0 +1,42 @@
+"closures.mexe" = main in
+{{
+main =
+	fun()
+	{
+		var i,f=makeArray(10);
+		for( i=0 ; i!=10 ; i=inc(i) )
+		{
+			var x=i;
+			f[i] = fun(){x;};
+		};
+		var j,nested=true, nonnested=true;
+		for( j=0 ; j!=10 ; j=inc(j) )
+		{
+			var r = f[j]();
+			nested = nested && (r==j);
+			nonnested = nonnested && (r==9);
+		};
+		nested && puts("nested OK");
+		nonnested && puts("nonnested OK");
+	};
+}}
+*
+;;;
+;;; This and following module to override the writeln in basis.mmod
+;;; In fact, we also renamed the method.
+;;;
+{{
+puts =
+	fun(x) {
+		write(x);
+		writeln();
+	};
+}}
+*
+{{
+#"writeln[f0]" = builtin(WRITELN);
+#"write[f1]" = builtin(WRITE);
+}}
+*
+BASIS
+;

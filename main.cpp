@@ -1,7 +1,6 @@
 #include <cassert>
-//#include <atomic>
+#include <cstring>  // strcmp()
 #include <string>
-//#include <thread>
 #include <iostream>
 #include <vector>
 #include "common/Operation.h"
@@ -30,10 +29,33 @@ OperationArray example(data_closure_morpho2);
 // Entry point
 //////////////////////////
 
+void usage() {
+	const char *str =
+"Usage:\n"
+"\n"
+"    morpho2 [-h] [-dump <filename of dump>]\n"
+
+	;
+
+
+	cout << str << endl;
+}
+
+
 int main(int argc, char *argv[]) {
-	Loader loader;
-	loader.load("/home/wim/projects/try/morpho/morphodist/closures.out");
-	return 0;
+	if (argc > 1) {
+		if (strcmp(argv[1],"-h") == 0) {
+			usage();
+			return 0;
+		} else if (strcmp(argv[1],"-dump") == 0 && argc > 2) {
+			Loader loader;
+			loader.load(argv[2]);
+			return 0;
+		} else {
+			usage();
+			return 0;
+		}
+ }
 
 	Machine machine;
 

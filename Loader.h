@@ -2,6 +2,7 @@
 #define LOADER_H
 #include <fstream>
 #include <string>
+#include <vector>
 
 /**
  * @brief Loader::Loader
@@ -42,6 +43,40 @@ private:
   char        read_char(std::ifstream &file);
   double      read_double(std::ifstream &file);
   void        read_operation(std::ifstream &file);
+
+  void load(std::ifstream &file);
+
+  /**
+   * @brief Representation of assembly code, for display purposes.
+   */
+  class CodeDump {
+  public:
+    class DumpItem {
+    public: //private:
+      bool m_has_offset{false};
+      int  m_offset{0};
+      std::string m_line;
+      int m_copy_count{0};
+      int m_copied_from{-1};
+
+      std::vector<std::string> m_params;
+
+    public:
+      void offset(int val);
+      void line(const std::string &val) { m_line = val; }
+      void param(const std::string &val) { m_params.push_back(val); }
+
+      std::string display(unsigned op_count, unsigned name_size);
+    };
+
+  private:
+    std::vector<DumpItem> m_list;
+
+  public:
+    void add(DumpItem &item) { m_list.push_back(item); }
+    void copy(int val);
+    void display();
+  } m_code_dump;
 
 public:
   Loader();
