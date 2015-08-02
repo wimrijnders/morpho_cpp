@@ -123,30 +123,7 @@ public:
 	}
 
 
-	/**
-	 * @brief Main loop for this interpreter
-	 */
-	void loop() {
-		assert(m_code != nullptr);
-
-		while(true) {
-			(*m_code)[m_pc]->execute(*this);
-			m_pc++;
-
-
-			// If we reached end of code, stop
-			if ((*m_code)[m_pc] == nullptr) {
-				break;
-			}
-
-			// Top-level return.
-			if (is_dead()) {
-				break;
-			}
-		}
-	}
-
-
+	void loop();
 	void callClosure(int narg);
 };
 

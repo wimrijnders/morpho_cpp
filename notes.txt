@@ -1,0 +1,8 @@
+Commands for creating a coverity build:
+
+	~/bin/Qt/5.3/gcc_64/bin/qmake ../Morpho2/Morpho2.pro
+	make clean
+	~/bin/coverity/bin/cov-build --dir cov-int make
+	tail cov-int/build-log.txt
+	zip -r Morpho2.zip cov-int
+

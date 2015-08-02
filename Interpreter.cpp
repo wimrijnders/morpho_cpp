@@ -31,3 +31,27 @@ void Interpreter::callClosure(int narg) {
 	m_code = c->code();
 	fixStackForClosureCall(get_acc(), c->stack(),c->narg());
 }
+
+
+/**
+ * @brief Main loop for this interpreter
+ */
+void Interpreter::loop() {
+  assert(m_code != nullptr);
+
+	while(true) {
+		(*m_code)[m_pc]->execute(*this);
+		m_pc++;
+
+
+		// If we reached end of code, stop
+		if ((*m_code)[m_pc] == nullptr) {
+			break;
+		}
+
+		// Top-level return.
+		if (is_dead()) {
+			break;
+		}
+	}
+}

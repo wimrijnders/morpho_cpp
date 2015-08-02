@@ -1,31 +1,33 @@
 #ifndef MAKEVAL_H
 #define MAKEVAL_H
+#include "../common/AnyObject.h"
 
 namespace operation {
 
 class MakeVal: public Operation {
 private:
-	AnyObject *m_val{nullptr};
+	ObjectRef m_val;
 
 public:
-	explicit MakeVal(int val) :
-		m_val(new IntObject(val))
-	{}
+	explicit MakeVal(int val) {
+		m_val.reset(new IntObject(val));
+	}
 
-	explicit MakeVal(bool val) :
-		m_val(new BoolObject(val))
-	{}
+	explicit MakeVal(bool val) {
+		m_val.reset(new BoolObject(val));
+	}
+
 
 	/**
 	 * @brief Explicit nullptr parameter to avoid ambiguity
 	 */
-	explicit MakeVal(std::nullptr_t val = nullptr) :
-		m_val(val)
-	{}
+	explicit MakeVal(std::nullptr_t val = nullptr) {
+		// Nothing to do...
+	}
 
-	explicit MakeVal(const char *val) :
-		m_val(new StringObject(val))
-	{}
+	explicit MakeVal(const char *val) {
+		m_val.reset(new StringObject(val));
+	}
 
 	void execute(Interpreter &interpreter) override {
 		interpreter.set_acc(m_val);
